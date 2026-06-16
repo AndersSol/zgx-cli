@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/AndersSol/zgx-cli/internal/catalog"
@@ -18,7 +17,7 @@ const (
 	defaultRetries       = 3
 )
 
-var sudoPattern = regexp.MustCompile(`sudo\s+`)
+var sudoCommandPattern = regexp.MustCompile(`(^|[;&|]\s*)sudo\s+`)
 
 // CommandResult is the outcome of one remote command.
 type CommandResult struct {
@@ -32,16 +31,16 @@ type Runner interface {
 	Run(ctx context.Context, command, sudoPassword string, timeout time.Duration, retries int) (CommandResult, error)
 }
 
-// SudoCommand transforms an installCommand using the source semantics.
-// It returns (command to run, usesSudo). With sudo: "sudo -S bash -c '<escaped without sudo>'".
+// SudoCommand prefixes commands that use sudo with a credential check.
+// It leaves the catalog command unchanged so mixed user/root command chains keep
+// their original privilege boundaries.
 func SudoCommand(rawCommand string) (command string, usesSudo bool) {
-	usesSudo = strings.Contains(rawCommand, "sudo")
+	usesSudo = sudoCommandPattern.MatchString(rawCommand)
 	if !usesSudo {
 		return rawCommand, false
 	}
 
-	commandWithoutSudo := sudoPattern.ReplaceAllString(rawCommand, "")
-	return "sudo -S bash -c " + singleQuote(commandWithoutSudo), true
+	return "sudo -S -v && { " + rawCommand + "; }", true
 }
 
 // Report describes the aggregate outcome for an installation or uninstallation run.
@@ -264,8 +263,4 @@ func withoutAppID(apps []catalog.App, id string) []catalog.App {
 		}
 	}
 	return filtered
-}
-
-func singleQuote(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
 }

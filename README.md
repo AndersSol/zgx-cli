@@ -187,10 +187,11 @@ built defensively:
 
 - **ed25519 keys** generated in-process; an existing private key is **never**
   overwritten, and key files are written `0600` / `0644`.
-- **Host-key trust-on-first-use.** On first contact with an unknown host,
-  `zgx` shows the ED25519 fingerprint and asks you to confirm **before** the
-  password is sent. A changed key on a known host is always rejected (possible
-  MITM). `InsecureIgnoreHostKey` is never used.
+- **Host-key trust-on-first-use in `connect`.** On first contact with an unknown
+  host, `zgx connect` shows the ED25519 fingerprint and asks you to confirm
+  **before** the password is sent. Other SSH commands require the host to
+  already be trusted, and a changed key is always rejected (possible MITM).
+  `InsecureIgnoreHostKey` is never used.
 - **Transparent execution (no surprise code).** `install` prints the raw
   remote commands first and flags download-and-execute lines (`curl … | sh`,
   `curl … && bash …`) with a ⚠. `--all` and any plan containing such a command
