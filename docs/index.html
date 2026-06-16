@@ -81,7 +81,11 @@
         <a href="https://github.com/AndersSol/zgx-cli/releases">All builds &amp; checksums →</a>
       </div>
       <div class="dl-note" id="dl-note-mac" style="display:none;margin-top:10px;font-size:.84rem;color:var(--muted)">
-        ✓ macOS builds are signed with an Apple Developer ID and notarized — no Gatekeeper workaround needed.
+        ✓ macOS installer (.pkg) and binaries are signed with an Apple Developer ID and notarized — double-click to install, no Gatekeeper warning.
+      </div>
+      <div class="dl-meta" style="margin-top:10px">
+        Or with <b>Homebrew</b> (macOS / Linux):
+        <code style="color:var(--accent2)">brew install --cask AndersSol/tap/zgx</code>
       </div>
       <div class="dl-secondary">
         <a class="btn" href="https://github.com/AndersSol/zgx-cli">View on GitHub</a>
@@ -119,8 +123,14 @@
 <section>
   <div class="wrap">
     <h2>Install</h2>
-    <p style="color:var(--muted);margin-top:-8px">Download a binary above, or:</p>
-    <pre># Install with Go:
+    <p style="color:var(--muted);margin-top:-8px">Pick whichever is easiest:</p>
+    <pre># macOS / Linux — Homebrew (auto-updates):
+brew install --cask AndersSol/tap/zgx
+
+# macOS — double-click installer: download the .pkg above
+# (signed + notarized — no Gatekeeper warning), double-click, done.
+
+# Any OS — with Go:
 go install github.com/AndersSol/zgx-cli@latest
 
 # …or build from source (Go 1.26+):
@@ -258,18 +268,31 @@ zgx health zgx-ab12cd                      # verify connectivity</pre>
             "</b> · <a href=\"" + RELEASES + "\">all builds &amp; checksums →</a>";
         }
 
+        function pkgFor(assets) {
+          for (var i = 0; i < assets.length; i++) {
+            if (/\.pkg$/.test(assets[i].name)) return assets[i];
+          }
+          return null;
+        }
+
         ["darwin", "linux", "windows"].forEach(function (o) {
           var btn = document.querySelector('[data-os="' + o + '"]');
           if (!btn) return;
           var arch = detectedArch || DEFAULT_ARCH[o];
-          var a = assetFor(rel.assets, o, arch);
+          // macOS: prefer the signed + notarized universal .pkg (double-click).
+          var a = (o === "darwin" && pkgFor(rel.assets)) || assetFor(rel.assets, o, arch);
           if (a) {
-            // reflect the arch we actually matched
-            var matched = a.name.indexOf("_arm64.") >= 0 ? "arm64" : "amd64";
             btn.href = a.browser_download_url;
             btn.setAttribute("download", "");
             var lbl = btn.querySelector("[data-arch]");
-            if (lbl) lbl.textContent = ARCH_LABEL[matched] + (o === "darwin" && matched === "arm64" ? " · Apple Silicon" : "");
+            if (lbl) {
+              if (/\.pkg$/.test(a.name)) {
+                lbl.textContent = "Installer · universal";
+              } else {
+                var matched = a.name.indexOf("_arm64.") >= 0 ? "arm64" : "amd64";
+                lbl.textContent = ARCH_LABEL[matched] + (o === "darwin" && matched === "arm64" ? " · Apple Silicon" : "");
+              }
+            }
           }
           if (o === os) btn.classList.add("primary");
         });

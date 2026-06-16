@@ -41,14 +41,28 @@ ConnectX networking between devices.
 
 ## Install
 
-### Download a binary (recommended)
+### Homebrew (macOS & Linux) — recommended
+
+```sh
+brew install --cask AndersSol/tap/zgx
+```
+
+Auto-updates with `brew upgrade`; remove with `brew uninstall --cask zgx`.
+
+### macOS — double-click installer
+
+Download `zgx_<version>_darwin_universal.pkg` from the
+[Releases page](https://github.com/AndersSol/zgx-cli/releases) and double-click
+it. The installer is signed with an Apple Developer ID and **notarized**, so it
+runs without any Gatekeeper warning and puts `zgx` on your `PATH`
+(`/usr/local/bin/zgx`). Universal binary — works on both Apple Silicon and Intel.
+
+### Download a binary
 
 Grab the archive for your OS/arch from the
 [Releases page](https://github.com/AndersSol/zgx-cli/releases), unpack it, and put
-`zgx` on your `PATH`.
-
-**macOS:** the release binaries are signed with an Apple Developer ID and
-notarized, so they run out of the box — no Gatekeeper workaround needed.
+`zgx` on your `PATH`. The macOS binaries are signed and notarized too, so they
+run out of the box.
 
 ### Install with Go
 
