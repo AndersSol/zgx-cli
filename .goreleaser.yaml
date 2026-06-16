@@ -49,6 +49,27 @@ archives:
       - NOTICE
       - LICENSE
 
+# Homebrew tap: publishes a formula to AndersSol/homebrew-tap so users can
+# `brew install AndersSol/tap/zgx`. Gated on HOMEBREW_TAP_TOKEN (a PAT) — when
+# the token env is empty the formula is built but not pushed, so releases keep
+# working until the tap token is configured.
+homebrew_casks:
+  - name: zgx
+    ids:
+      - zgx
+    homepage: "https://github.com/AndersSol/zgx-cli"
+    description: "Portable CLI to configure HP ZGX nano over SSH"
+    repository:
+      owner: AndersSol
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    commit_author:
+      name: goreleaserbot
+      email: "[email protected]"
+    commit_msg_template: "brew: zgx {{ .Tag }}"
+    skip_upload: '{{ if .Env.HOMEBREW_TAP_TOKEN }}false{{ else }}true{{ end }}'
+
 checksum:
   name_template: checksums.txt
   algorithm: sha256

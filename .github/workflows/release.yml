@@ -1,7 +1,11 @@
 name: release
 
-# Builds cross-platform binaries and publishes a GitHub Release when a
-# version tag (vX.Y.Z) is pushed.
+# On a version tag (vX.Y.Z):
+#  - goreleaser (Linux) builds + signs + notarizes the cross-platform binaries,
+#    publishes the GitHub Release, and pushes the Homebrew formula.
+#  - pkg-macos (macOS) builds a signed + notarized + stapled universal .pkg
+#    installer and attaches it to the release. It skips gracefully until the
+#    Developer ID Installer cert secret is configured.
 on:
   push:
     tags:
@@ -31,9 +35,105 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS signing + notarization (optional — release stays unsigned if unset)
+          # Homebrew tap push (PAT with contents:write on AndersSol/homebrew-tap).
+          # Empty until configured -> goreleaser builds the formula but skips the push.
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          # macOS code-signing + notarization (no-op until the MACOS_* secrets exist)
           MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
           MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
           MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
           MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
           MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+
+  pkg-macos:
+    name: Notarized macOS .pkg installer
+    runs-on: macos-latest
+    needs: goreleaser
+    steps:
+      - name: Check installer cert is configured
+        id: check
+        env:
+          CERT: ${{ secrets.MACOS_INSTALLER_CERT_P12 }}
+        run: |
+          if [ -z "$CERT" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::MACOS_INSTALLER_CERT_P12 not set — skipping .pkg build"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download darwin tarballs from the release
+        if: steps.check.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --pattern "zgx-cli_*_darwin_arm64.tar.gz" \
+            --pattern "zgx-cli_*_darwin_amd64.tar.gz" --dir ./dist
+
+      - name: Make a universal binary
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          mkdir -p ext/arm64 ext/amd64
+          tar -xzf dist/zgx-cli_*_darwin_arm64.tar.gz -C ext/arm64
+          tar -xzf dist/zgx-cli_*_darwin_amd64.tar.gz -C ext/amd64
+          lipo -create -output zgx_universal ext/arm64/zgx ext/amd64/zgx
+          lipo -info zgx_universal
+
+      - name: Import Developer ID Installer certificate
+        if: steps.check.outputs.skip == 'false'
+        env:
+          CERT_P12: ${{ secrets.MACOS_INSTALLER_CERT_P12 }}
+          CERT_PWD: ${{ secrets.MACOS_INSTALLER_CERT_PWD }}
+          KEYCHAIN_PWD: ${{ secrets.MACOS_CI_KEYCHAIN_PWD }}
+        run: |
+          echo "$CERT_P12" | base64 --decode > cert.p12
+          security create-keychain -p "$KEYCHAIN_PWD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PWD" build.keychain
+          security import cert.p12 -k build.keychain -P "$CERT_PWD" \
+            -T /usr/bin/pkgbuild -T /usr/bin/productsign -T /usr/bin/productbuild
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
+            -k "$KEYCHAIN_PWD" build.keychain >/dev/null
+          security find-identity -v build.keychain
+          rm -f cert.p12
+
+      - name: Build, sign, notarize and staple the .pkg
+        if: steps.check.outputs.skip == 'false'
+        env:
+          CERT_NAME: ${{ secrets.MACOS_INSTALLER_CERT_NAME }}
+          NOTARY_KEY_B64: ${{ secrets.MACOS_NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          PKG="zgx_${VERSION}_darwin_universal.pkg"
+
+          mkdir -p root/usr/local/bin
+          cp zgx_universal root/usr/local/bin/zgx
+          chmod 755 root/usr/local/bin/zgx
+
+          pkgbuild --identifier "com.anderssol.zgx" --version "$VERSION" \
+            --install-location / --root ./root ./unsigned.pkg
+          productsign --sign "$CERT_NAME" --timestamp ./unsigned.pkg "./$PKG"
+          pkgutil --check-signature "./$PKG"
+
+          echo "$NOTARY_KEY_B64" | base64 --decode > notary_key.p8
+          xcrun notarytool submit "./$PKG" \
+            --key notary_key.p8 --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" --wait
+          rm -f notary_key.p8
+
+          xcrun stapler staple "./$PKG"
+          xcrun stapler validate "./$PKG"
+          echo "PKG=$PKG" >> "$GITHUB_ENV"
+
+      - name: Upload .pkg to the release
+        if: steps.check.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$GITHUB_REF_NAME" "./$PKG" --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Clean up keychain
+        if: always() && steps.check.outputs.skip == 'false'
+        run: security delete-keychain build.keychain || true
