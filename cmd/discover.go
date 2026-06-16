@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,12 +34,7 @@ func discoverCmd() *cobra.Command {
 			}
 
 			for _, device := range devices {
-				fmt.Fprintf(out, "%s  %s:%d  (%s)\n",
-					device.Hostname,
-					strings.Join(device.Addresses, ","),
-					device.Port,
-					device.Name,
-				)
+				fmt.Fprintln(out, formatDevice(device))
 			}
 
 			return nil
@@ -45,4 +42,17 @@ func discoverCmd() *cobra.Command {
 	}
 	cmd.Flags().IntVar(&timeoutSeconds, "timeout", 5, "How long discovery should run, in seconds")
 	return cmd
+}
+
+func formatDevice(d discovery.Device) string {
+	port := strconv.Itoa(d.Port)
+	hostports := make([]string, 0, len(d.Addresses))
+	for _, addr := range d.Addresses {
+		hostports = append(hostports, net.JoinHostPort(addr, port))
+	}
+	addrField := strings.Join(hostports, ", ")
+	if addrField == "" {
+		addrField = ":" + port
+	}
+	return fmt.Sprintf("%s  %s  (%s)", d.Hostname, addrField, d.Name)
 }

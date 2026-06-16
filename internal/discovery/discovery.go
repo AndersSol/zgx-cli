@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	sshService   = "_ssh._tcp"
-	hpzgxService = "_hpzgx._tcp"
+	sshService   = "_ssh._tcp.local."
+	hpzgxService = "_hpzgx._tcp.local."
 )
 
 var zgxHostnamePatterns = []*regexp.Regexp{
@@ -164,17 +164,22 @@ func deviceFromBrowseEntry(entry dnssd.BrowseEntry) Device {
 	return Device{
 		Name:       entry.Name,
 		Hostname:   HostnameFromHost(entry.Host),
-		Addresses:  ipv4Strings(entry.IPs),
+		Addresses:  addressStrings(entry.IPs),
 		Port:       entry.Port,
 		Protocol:   "tcp",
 		TXTRecords: copyTXTRecords(entry.Text),
 	}
 }
 
-func ipv4Strings(ips []net.IP) []string {
+func addressStrings(ips []net.IP) []string {
 	addresses := make([]string, 0, len(ips))
 	for _, ip := range ips {
-		if ip.To4() == nil {
+		if ipv4 := ip.To4(); ipv4 != nil {
+			addresses = append(addresses, ipv4.String())
+		}
+	}
+	for _, ip := range ips {
+		if ip.To4() != nil || ip.IsLinkLocalUnicast() {
 			continue
 		}
 		addresses = append(addresses, ip.String())

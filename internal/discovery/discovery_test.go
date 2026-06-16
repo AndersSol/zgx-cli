@@ -1,9 +1,38 @@
 package discovery
 
 import (
+	"net"
 	"reflect"
+	"strings"
 	"testing"
 )
+
+func TestServiceTypesAreFullyQualified(t *testing.T) {
+	services := []string{sshService, hpzgxService}
+	for _, service := range services {
+		if !strings.HasPrefix(service, "_") {
+			t.Errorf("service %q does not start with _", service)
+		}
+		if !strings.HasSuffix(service, "._tcp.local.") {
+			t.Errorf("service %q does not end with ._tcp.local.", service)
+		}
+	}
+}
+
+func TestAddressStringsIncludesRoutableIPv6(t *testing.T) {
+	ips := []net.IP{
+		net.ParseIP("192.168.1.209"),
+		net.ParseIP("fd00::1"),
+		net.ParseIP("fe80::1"),
+	}
+
+	got := addressStrings(ips)
+	want := []string{"192.168.1.209", "fd00::1"}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("addressStrings() = %#v, want %#v", got, want)
+	}
+}
 
 func TestIsZGXHostname(t *testing.T) {
 	positives := []string{
