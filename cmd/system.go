@@ -10,6 +10,7 @@ import (
 	"github.com/AndersSol/zgx-cli/internal/connect"
 	"github.com/AndersSol/zgx-cli/internal/dnsreg"
 	"github.com/AndersSol/zgx-cli/internal/install"
+	"github.com/AndersSol/zgx-cli/internal/sshdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -40,6 +41,7 @@ func healthCmd() *cobra.Command {
 			target := connect.Target{Host: host, User: opts.user, Port: opts.port}
 			out := cmd.OutOrStdout()
 			if err := connect.TestKeyAuth(ctx, target, expandHome(opts.identity), hostKey); err != nil {
+				err = sshdiag.AnnotateAuthError(err, opts.user, host)
 				fmt.Fprintf(out, "%s: unreachable: %v\n", host, err)
 				return fmt.Errorf("health: %s unreachable: %w", host, err)
 			}
@@ -80,7 +82,7 @@ func dnsRegisterCmd() *cobra.Command {
 			}
 			result, err := dnsreg.Register(context.Background(), runner, string(passwordBytes))
 			if err != nil {
-				return err
+				return sshdiag.AnnotateAuthError(err, opts.user, host)
 			}
 
 			fmt.Fprintf(out, "Device ID: %s\n", result.Identifier)

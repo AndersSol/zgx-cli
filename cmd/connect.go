@@ -14,6 +14,7 @@ import (
 
 	connectpkg "github.com/AndersSol/zgx-cli/internal/connect"
 	"github.com/AndersSol/zgx-cli/internal/discovery"
+	"github.com/AndersSol/zgx-cli/internal/sshdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -102,7 +103,7 @@ func connectCmd() *cobra.Command {
 			target := connectpkg.Target{Host: host, User: user, Port: port}
 			fmt.Fprintf(out, "Adding public key to %s@%s ...\n", user, host)
 			if err := connectpkg.Bootstrap(context.Background(), target, password, keyPair.PublicKeyLine, hostKey); err != nil {
-				return err
+				return sshdiag.AnnotateAuthError(err, user, host)
 			}
 
 			configPath := filepath.Join(sshDir, "config")

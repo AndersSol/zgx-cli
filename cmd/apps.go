@@ -13,6 +13,7 @@ import (
 	"github.com/AndersSol/zgx-cli/internal/catalog"
 	"github.com/AndersSol/zgx-cli/internal/connect"
 	"github.com/AndersSol/zgx-cli/internal/install"
+	"github.com/AndersSol/zgx-cli/internal/sshdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -117,7 +118,7 @@ func installAppsCmd() *cobra.Command {
 
 			report, err := engine.Install(context.Background(), cats, ids, password)
 			if err != nil {
-				return err
+				return sshdiag.AnnotateAuthError(err, opts.user, opts.host)
 			}
 			writeInstallReport(out, report, "Installed")
 			return failOnReport(report)
@@ -153,7 +154,7 @@ func verifyAppsCmd() *cobra.Command {
 
 			result, err := engine.Verify(context.Background(), cats, ids)
 			if err != nil {
-				return err
+				return sshdiag.AnnotateAuthError(err, opts.user, opts.host)
 			}
 
 			out := cmd.OutOrStdout()
@@ -226,7 +227,7 @@ func uninstallAppsCmd() *cobra.Command {
 
 			report, err := engine.Uninstall(context.Background(), cats, ids, password)
 			if err != nil {
-				return err
+				return sshdiag.AnnotateAuthError(err, opts.user, opts.host)
 			}
 			writeInstallReport(out, report, "Uninstalled")
 			return failOnReport(report)
