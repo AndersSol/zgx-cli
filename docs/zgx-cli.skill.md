@@ -200,6 +200,67 @@ by Codex (7 false-success / hang / secret-leak holes closed).
    `Service file written: true`. `Avahi restarted: false` is non-fatal — the service file
    is written and activates on the next reboot.
 
+### Recipe D — Make the device stable on a real LAN (router-agnostic)
+This is not a ZGX CLI command path, but it prevents repeated rediscovery work. Keep it
+vendor-neutral: treat router UI/API details as an implementation detail and verify from
+the device and from `zgx` afterward.
+
+Use variables, never hard-code site-specific values:
+- `<U>` = device Linux user created during first boot.
+- `<host>` = current advertised host (`spark-XXXX`, `zgx-XXXX`, or custom hostname).
+- `<mdns>` = `<host>.local` when mDNS works.
+- `<ip>` = current LAN IPv4/IPv6 address.
+- `<mac>` = wired NIC MAC address.
+- `<router>` = whatever provides DHCP/DNS/VPN on the LAN.
+
+1. **Agent** — collect facts before changing the network:
+   ```bash
+   zgx health <host>.local --user <U> || ssh -o BatchMode=yes <U>@<host>.local 'hostname; ip -br addr'
+   ```
+   If mDNS is flaky, use the current `<ip>` from the router client list or SSH banner.
+   Record `<mac>`, `<ip>`, `<host>`, `<U>`, and the active network interface name.
+2. **Agent/User** — in `<router>` or DHCP server, create a DHCP reservation for `<mac>`
+   to keep `<ip>` stable. Prefer a reservation over a static IP configured inside the
+   ZGX OS unless the site's network standard requires host-side static addressing.
+3. **Agent/User** — local DNS is optional. Baseline on mDNS (`<host>.local`) and only add
+   a router DNS record if the router accepts it. Router validators differ: some reject
+   labels that the OS hostname accepts. If local DNS validation fails, keep the DHCP
+   reservation and rely on mDNS/SSH config instead of spending time forcing DNS.
+4. **Agent** — verify after saving, using read-only checks:
+   ```bash
+   zgx health <host>.local --user <U> || zgx health <ip> --user <U>
+   ssh -o BatchMode=yes <U>@<host>.local 'hostname; ip route get 1.1.1.1'
+   ```
+   A router UI saying "saved" is not sufficient; require SSH/`zgx health`.
+
+### Recipe E — Remote access decision tree (VPN-agnostic)
+Choose the VPN based on the site's WAN topology and existing operations model. Do not
+install an agent on the ZGX or open inbound ports until the topology calls for it.
+
+1. **Agent/User** — identify WAN topology from the router:
+   - **Upstream NAT / CGNAT / ISP router in front:** prefer relay or controller-backed
+     remote access such as the router vendor's Teleport-style feature, Tailscale,
+     ZeroTier, or an existing company Zero Trust VPN.
+   - **Public WAN on the router and permission to port-forward:** WireGuard/OpenVPN on
+     the router can be appropriate.
+   - **Managed enterprise network:** use the site's approved VPN/MDM/Zero Trust path.
+2. **Agent/User** — if using a router-native invite flow, create one invite per user or
+   device when the product documents it as single-user/single-use. Do not share a guest
+   invite broadly.
+3. **Agent** — verify remote access from a client on the VPN, not from the LAN:
+   ```bash
+   zgx health <host>.local --user <U> || zgx health <ip> --user <U>
+   ```
+   If mDNS does not cross the VPN, use the reserved `<ip>` or an SSH config alias.
+4. **Agent/User** — if replacing an overlay VPN, remove it cleanly and verify LAN access
+   still works:
+   ```bash
+   tailscale down        # if Tailscale is installed and in use
+   systemctl is-active tailscaled || true
+   ```
+   Then uninstall with the OS package manager only after the user confirms that the
+   replacement VPN path works.
+
 ### Operator guardrails
 - Always pass `--user <name>` (default `hp` mismatches NVIDIA-imaged devices).
 - **Never** run `uninstall`, `unpair`, `pair`, or any `--all` command unless the user
@@ -209,6 +270,8 @@ by Codex (7 false-success / hang / secret-leak holes closed).
   shell history. Let the user type it at the prompt.
 - Prefer a pinned host/IP over discovery for repeat runs (mDNS misses on a cold cache).
 - Don't feed passwords to the secret-prompt commands; hand those to the user.
+- Keep LAN/VPN guidance vendor-agnostic. Router-specific examples may be used as examples,
+  but never as assumptions about the next user's network.
 
 ## Hardware-verification status (against a real DGX Spark, DGX OS 7.5.0)
 
