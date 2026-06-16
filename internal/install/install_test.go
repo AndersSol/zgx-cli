@@ -20,13 +20,13 @@ func TestSudoCommand(t *testing.T) {
 		{
 			name:     "simple sudo",
 			raw:      "sudo apt install -y x",
-			command:  "sudo -S bash -c 'apt install -y x'",
+			command:  "sudo -S -v && { sudo apt install -y x; }",
 			usesSudo: true,
 		},
 		{
-			name:     "strips all sudo tokens",
+			name:     "preserves sudo tokens and non-sudo command segments",
 			raw:      "sudo a && sudo b",
-			command:  "sudo -S bash -c 'a && b'",
+			command:  "sudo -S -v && { sudo a && sudo b; }",
 			usesSudo: true,
 		},
 		{
@@ -36,9 +36,15 @@ func TestSudoCommand(t *testing.T) {
 			usesSudo: false,
 		},
 		{
-			name:     "escapes apostrophe",
-			raw:      "sudo bash -c \"echo 'x'\"",
-			command:  "sudo -S bash -c 'bash -c \"echo '\\''x'\\''\"'",
+			name:     "preserves user-home cleanup after sudo commands",
+			raw:      "sudo systemctl stop ollama 2>/dev/null; rm -rf ~/.ollama",
+			command:  "sudo -S -v && { sudo systemctl stop ollama 2>/dev/null; rm -rf ~/.ollama; }",
+			usesSudo: true,
+		},
+		{
+			name:     "detects sudo after pipe",
+			raw:      "curl -fsSL x | sudo sh",
+			command:  "sudo -S -v && { curl -fsSL x | sudo sh; }",
 			usesSudo: true,
 		},
 	}

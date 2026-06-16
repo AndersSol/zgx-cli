@@ -66,10 +66,10 @@ func FingerprintSHA256(key ssh.PublicKey) string {
 	return ssh.FingerprintSHA256(key)
 }
 
-// KnownHostsCallback verifies against knownHostsPath with TOFU for unknown hosts.
+// KnownHostsCallback verifies against knownHostsPath and rejects unknown hosts.
 func KnownHostsCallback(knownHostsPath string) (ssh.HostKeyCallback, error) {
 	return KnownHostsCallbackWithConfirm(knownHostsPath, func(hostname, fingerprint string) (bool, error) {
-		return true, nil
+		return false, nil
 	})
 }
 

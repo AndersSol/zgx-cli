@@ -30,7 +30,7 @@ func TestAuthorizedKeysCommand(t *testing.T) {
 	}
 }
 
-func TestKnownHostsCallbackTOFU(t *testing.T) {
+func TestKnownHostsCallbackRejectsUnknownHost(t *testing.T) {
 	knownHostsPath := filepath.Join(t.TempDir(), "known_hosts")
 	hostPub := testHostPublicKey(t)
 	addr := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 22}
@@ -40,19 +40,44 @@ func TestKnownHostsCallbackTOFU(t *testing.T) {
 		t.Fatalf("KnownHostsCallback() error = %v", err)
 	}
 	if err := cb("zgx-test:22", addr, hostPub); err != nil {
-		t.Fatalf("first callback TOFU append error = %v", err)
+		if !strings.Contains(err.Error(), "unknown SSH host") {
+			t.Fatalf("unknown host error = %v, want unknown SSH host hint", err)
+		}
+	} else {
+		t.Fatal("callback accepted unknown host without explicit confirmation")
 	}
 
 	content, err := os.ReadFile(knownHostsPath)
 	if err != nil {
 		t.Fatalf("ReadFile(known_hosts) error = %v", err)
 	}
-	if lines := strings.Count(strings.TrimSpace(string(content)), "\n") + 1; lines != 1 {
-		t.Fatalf("known_hosts line count = %d, want 1:\n%s", lines, content)
+	if strings.TrimSpace(string(content)) != "" {
+		t.Fatalf("known_hosts was updated despite rejecting unknown host:\n%s", content)
+	}
+}
+
+func TestKnownHostsCallbackAcceptsKnownHostAndRejectsMismatch(t *testing.T) {
+	knownHostsPath := filepath.Join(t.TempDir(), "known_hosts")
+	hostPub := testHostPublicKey(t)
+	addr := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 22}
+
+	seed, err := KnownHostsCallbackWithConfirm(knownHostsPath, func(hostname, fingerprint string) (bool, error) {
+		return true, nil
+	})
+	if err != nil {
+		t.Fatalf("KnownHostsCallbackWithConfirm() error = %v", err)
+	}
+	if err := seed("zgx-test:22", addr, hostPub); err != nil {
+		t.Fatalf("seed known_hosts error = %v", err)
+	}
+
+	cb, err := KnownHostsCallback(knownHostsPath)
+	if err != nil {
+		t.Fatalf("KnownHostsCallback() error = %v", err)
 	}
 
 	if err := cb("zgx-test:22", addr, hostPub); err != nil {
-		t.Fatalf("second callback with same key error = %v", err)
+		t.Fatalf("callback rejected known host: %v", err)
 	}
 
 	otherHostPub := testHostPublicKey(t)

@@ -247,8 +247,9 @@ zgx health  spark-7f2a --user demo                    # check connectivity any t
     <h2>Safe by default</h2>
     <p class="lead">It configures a machine over SSH, so it treats that like it matters.</p>
     <ul class="feat">
-      <li><b>Host-key TOFU + fingerprint.</b> Confirms an unknown host's fingerprint before
-        the password is sent; rejects changed keys.</li>
+      <li><b>Host-key TOFU + fingerprint.</b> <code>connect</code> confirms an unknown
+        host's fingerprint before the password is sent; later SSH commands require a
+        trusted host and reject changed keys.</li>
       <li><b>No surprise code.</b> Raw remote commands shown; download-and-execute lines
         require explicit confirmation.</li>
       <li><b>Input validation.</b> No SSH-config injection; NIC names and device IDs are
