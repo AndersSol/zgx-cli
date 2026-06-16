@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ZGX CLI — configure HP ZGX nano over SSH (zgx)</title>
-<meta name="description" content="A portable, single-binary CLI that configures HP ZGX nano devices over SSH: discovery, key-based access, app installation, and ConnectX pairing. Linux, macOS, Windows." />
+<title>ZGX CLI — drive your HP ZGX nano with your own AI agent</title>
+<meta name="description" content="ZGX CLI is a portable, single-binary CLI for HP ZGX nano / NVIDIA DGX Spark. Discover, set up SSH, install the AI stack and pair over ConnectX — from the terminal or your own AI coding agent. No IDE lock-in. Linux, macOS, Windows." />
 <style>
   :root{
     --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3;
@@ -18,11 +18,15 @@
   a:hover{text-decoration:underline}
   .wrap{max-width:860px;margin:0 auto;padding:0 20px}
   header{padding:72px 0 40px;text-align:center;border-bottom:1px solid var(--border)}
+  .kicker{font-family:var(--mono);font-size:.82rem;letter-spacing:.04em;color:var(--accent);
+    text-transform:uppercase;margin:0 0 14px}
   h1{font-size:3rem;margin:0;letter-spacing:-.02em}
-  .tag{font-size:1.2rem;color:var(--muted);max-width:640px;margin:16px auto 0}
+  .tag{font-size:1.2rem;color:var(--muted);max-width:660px;margin:16px auto 0}
+  .tag b{color:var(--fg)}
   .badges{margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   .badge{font-family:var(--mono);font-size:.8rem;border:1px solid var(--border);
     border-radius:999px;padding:5px 12px;color:var(--muted);background:var(--panel)}
+  .badge.on{color:var(--accent2);border-color:rgba(63,185,80,.4)}
   .btn{display:inline-block;padding:11px 22px;border-radius:8px;font-weight:600;
     border:1px solid var(--border);background:var(--panel);color:var(--fg)}
   .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -34,17 +38,34 @@
   .dl-grid .btn.primary .arch{color:rgba(255,255,255,.85)}
   .dl-meta{margin-top:14px;font-size:.86rem;color:var(--muted)}
   .dl-secondary{margin-top:14px}
-  .notice{margin:28px auto 0;max-width:680px;background:rgba(210,153,34,.08);
-    border:1px solid rgba(210,153,34,.4);border-radius:8px;padding:14px 18px;
-    color:#e9d8a6;font-size:.92rem;text-align:left}
+  .notice{margin:28px auto 0;max-width:700px;background:rgba(63,185,80,.07);
+    border:1px solid rgba(63,185,80,.35);border-radius:8px;padding:14px 18px;
+    color:#cdeccd;font-size:.92rem;text-align:left}
+  .notice b{color:#e6f6e6}
   section{padding:48px 0;border-bottom:1px solid var(--border)}
-  h2{font-size:1.5rem;margin:0 0 20px;letter-spacing:-.01em}
+  section.ai{background:linear-gradient(180deg,rgba(68,147,248,.06),transparent)}
+  h2{font-size:1.5rem;margin:0 0 8px;letter-spacing:-.01em}
+  .lead{color:var(--muted);margin:0 0 22px;max-width:680px}
+  .lead b{color:var(--fg)}
   pre{background:var(--panel);border:1px solid var(--border);border-radius:8px;
     padding:16px;overflow:auto;font-family:var(--mono);font-size:.88rem;margin:0 0 14px}
   code{font-family:var(--mono)}
-  ul.feat{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  ul.feat{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0}
   ul.feat li{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
   ul.feat b{color:var(--fg)}
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:0 0 22px;display:grid;gap:12px}
+  ol.steps li{position:relative;background:var(--panel);border:1px solid var(--border);
+    border-radius:8px;padding:14px 16px 14px 52px}
+  ol.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:14px;top:13px;
+    width:26px;height:26px;border-radius:999px;background:var(--accent);color:#fff;
+    font-family:var(--mono);font-size:.86rem;display:flex;align-items:center;justify-content:center}
+  ol.steps b{color:var(--fg)}
+  .term{background:#0a0e14;border:1px solid var(--border);border-radius:10px;padding:16px 18px;
+    font-family:var(--mono);font-size:.84rem;line-height:1.75;overflow:auto;margin:0 0 14px;white-space:pre-wrap}
+  .term .u{color:var(--accent)} .term .a{color:var(--accent2)} .term .m{color:var(--muted)}
+  .prompts{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+  .prompts span{border:1px solid var(--border);background:var(--panel);border-radius:999px;
+    padding:7px 14px;font-size:.88rem;color:var(--fg)}
   table{width:100%;border-collapse:collapse;font-size:.92rem}
   th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
   th{color:var(--muted);font-weight:600}
@@ -58,13 +79,15 @@
 <body>
 <header>
   <div class="wrap">
-    <h1>zgx</h1>
-    <p class="tag">A portable, single-binary CLI that configures <b>HP ZGX nano</b>
-      devices over SSH — discovery, key-based access, app installation, and
-      ConnectX pairing — on Linux, macOS, and Windows.</p>
+    <p class="kicker">HP ZGX nano · NVIDIA DGX Spark</p>
+    <h1>ZGX CLI</h1>
+    <p class="tag">Your desk-side AI supercomputer, set up with <b>your own AI agent</b>.
+      One single-binary CLI for HP ZGX nano — discovery, SSH access, app installs and
+      ConnectX pairing — driven from the terminal or any coding agent. No IDE lock-in.</p>
     <div class="badges">
       <span class="badge">Go · single binary</span>
       <span class="badge">Linux · macOS · Windows</span>
+      <span class="badge on">Agent-ready</span>
       <span class="badge">MIT licensed</span>
     </div>
 
@@ -93,29 +116,82 @@
     </div>
 
     <div class="notice">
-      <b>Early / not yet hardware-verified.</b> Every command is implemented and
-      unit-tested (race-clean) and the security-sensitive surface has been
-      through a multi-agent review, but the flows have not yet been run against a
-      physical ZGX device. Treat this as a <code>v0.x</code> preview.
+      <b>Hardware-verified.</b> Discovery, SSH key setup, app install, health checks and
+      mDNS registration have all been run end-to-end against a real NVIDIA DGX Spark
+      (DGX OS 7.5). ConnectX pairing needs two devices and is the one flow still pending.
+      The security-sensitive surface went through a multi-agent review. Still
+      <code>v0.x</code> — moving fast.
     </div>
   </div>
 </header>
 
+<section class="ai">
+  <div class="wrap">
+    <h2>Bring your own AI agent</h2>
+    <p class="lead">The official way to set up a ZGX nano is a VS Code extension. That is
+      one editor, one workflow, one box you have to sit in front of. <b>ZGX CLI is just
+      commands</b> — so anything that can run a command can drive your device, including
+      your AI coding agent.</p>
+
+    <ol class="steps">
+      <li><b>Install the CLI.</b> One binary, every OS (see below).</li>
+      <li><b>Add the agent skill.</b> One file. It teaches your agent the exact commands,
+        the gotchas, and self-checking recipes that were verified against real hardware.</li>
+      <li><b>Ask in plain language.</b> Your agent discovers and verifies on its own, and
+        hands you the exact command whenever a password is needed.</li>
+    </ol>
+
+    <div class="term"><span class="u">you ▸</span> get my ZGX nano ready for development
+<span class="a">agent ▸</span> discovering on the LAN… found <b>spark-7f2a</b>
+<span class="a">agent ▸</span> run this — it'll ask for the device password:
+          zgx connect spark-7f2a --user demo
+<span class="u">you ▸</span> <span class="m">·········· → Key-based access works.</span>
+<span class="a">agent ▸</span> zgx health spark-7f2a --user demo   <span class="m"># → healthy</span>
+<span class="a">agent ▸</span> now run this — it'll ask for your sudo password:
+          zgx install jupyter-lab podman --host spark-7f2a --user demo
+<span class="u">you ▸</span> <span class="m">·········· → Installed</span>
+<span class="a">agent ▸</span> zgx verify jupyter-lab podman --host spark-7f2a --user demo   <span class="m"># → ✓ all installed</span>
+<span class="a">agent ▸</span> done. Reachable as <b>ssh spark-7f2a</b>, with jupyter-lab + podman ready.</div>
+
+    <h2 style="margin-top:30px;font-size:1.15rem">Add the skill</h2>
+    <p class="lead" style="margin-bottom:12px">Built for <b>Claude Code</b> — but the skill
+      is plain Markdown, so point any agent (Cursor, your own harness) at the same file.</p>
+    <pre>mkdir -p ~/.claude/skills/zgx-cli
+curl -fsSL https://anderssol.github.io/zgx-cli/zgx-cli.skill.md \
+  -o ~/.claude/skills/zgx-cli/SKILL.md</pre>
+    <p class="dl-meta" style="margin-top:0"><a href="zgx-cli.skill.md">Read the agent skill →</a>
+      &nbsp;·&nbsp; it ships the verified command surface, the “default user is <code>hp</code>”
+      traps, and recipes the agent runs and self-checks.</p>
+
+    <h2 style="margin-top:26px;font-size:1.15rem">Things to say to your agent</h2>
+    <div class="prompts">
+      <span>“set up my ZGX nano for the first time”</span>
+      <span>“install the jupyter + ollama stack on spark-7f2a”</span>
+      <span>“is my ZGX healthy and what's installed?”</span>
+      <span>“register the device so it's easy to find again”</span>
+    </div>
+  </div>
+</section>
+
 <section>
   <div class="wrap">
-    <h2>Why zgx</h2>
+    <h2>What it actually does</h2>
+    <p class="lead">Everything the desktop tooling does, as plain commands you (or your agent)
+      can script, pipe and verify.</p>
     <ul class="feat">
-      <li><b>One binary, every desktop.</b> Pure-Go, no cgo — cross-compiles to
-        Linux/macOS/Windows (amd64 + arm64).</li>
-      <li><b>Zero-config discovery.</b> Finds devices on the LAN via mDNS.</li>
-      <li><b>Safe SSH bootstrap.</b> ed25519 keys, trust-on-first-use host-key
-        confirmation, idempotent setup.</li>
-      <li><b>Curated AI/ML stack.</b> 17 apps installed in dependency order with
-        partial-failure reporting.</li>
-      <li><b>Transparent installs.</b> Shows raw remote commands and flags
-        <code>curl | sh</code> before running.</li>
-      <li><b>High-speed pairing.</b> Discovers ConnectX NICs and writes
-        link-local netplan.</li>
+      <li><b>Finds the device for you.</b> Zero-config mDNS discovery on the LAN — no IP
+        hunting.</li>
+      <li><b>Sets up passwordless SSH safely.</b> ed25519 keys, trust-on-first-use host-key
+        confirmation, idempotent — re-run it without fear.</li>
+      <li><b>Installs a curated AI/ML stack.</b> 17 apps (Jupyter, Ollama, podman, miniforge,
+        and more) in dependency order, with clear per-app success/failure reporting.</li>
+      <li><b>Shows its work.</b> Prints the raw remote commands and flags any
+        <code>curl | sh</code> before it runs — no surprise code on your box.</li>
+      <li><b>Pairs two units over ConnectX.</b> Discovers ConnectX NICs and writes
+        link-local netplan for device-to-device networking <em>(implemented; two-device
+        verification still pending)</em>.</li>
+      <li><b>One binary, every desktop.</b> Pure-Go, no cgo — Linux / macOS / Windows,
+        amd64 + arm64. Nothing to install on the device itself.</li>
     </ul>
   </div>
 </section>
@@ -123,24 +199,27 @@
 <section>
   <div class="wrap">
     <h2>Install</h2>
-    <p style="color:var(--muted);margin-top:-8px">Pick whichever is easiest:</p>
+    <p class="lead">Pick whichever is easiest — the binary lives on your laptop, not the device.</p>
     <pre># macOS / Linux — Homebrew (auto-updates):
 brew install --cask AndersSol/tap/zgx
 
-# macOS — double-click installer: download the .pkg above
-# (signed + notarized — no Gatekeeper warning), double-click, done.
+# macOS — double-click installer:
+#   download the .pkg above (signed + notarized — no Gatekeeper warning), double-click, done.
 
-# Any OS — with Go:
+# Any OS — with Go 1.26+ (this builds a binary named `zgx-cli`; rename to `zgx` if you like):
 go install github.com/AndersSol/zgx-cli@latest
 
-# …or build from source (Go 1.26+):
-git clone https://github.com/AndersSol/zgx-cli.git &amp;&amp; cd zgx-cli &amp;&amp; go build -o zgx .</pre>
-    <h2 style="margin-top:32px">Quick start</h2>
-    <pre>zgx discover                              # find devices on the network
-zgx connect zgx-ab12cd --user hp          # set up SSH key access
-zgx list                                  # browse the app catalog
-zgx install jupyter-lab --host zgx-ab12cd # install (deps pulled in automatically)
-zgx health zgx-ab12cd                      # verify connectivity</pre>
+# …or grab a binary from the download buttons above and put it on your PATH.</pre>
+    <h2 style="margin-top:30px">Quick start (from the terminal)</h2>
+    <pre>zgx discover                                          # find devices on the network
+zgx connect spark-7f2a --user demo                    # set up SSH key access (type the device password)
+zgx list                                              # browse the curated app catalog
+zgx install jupyter-lab --host spark-7f2a --user demo # install (dependencies pulled in automatically)
+zgx verify  jupyter-lab --host spark-7f2a --user demo # confirm it landed
+zgx health  spark-7f2a --user demo                    # check connectivity any time</pre>
+    <p class="dl-meta" style="margin-top:0">First device? The default SSH user is <code>hp</code>
+      on HP factory images, but a re-imaged DGX Spark uses the name you created at first boot —
+      pass <code>--user &lt;name&gt;</code>. The CLI tells you when that's the problem.</p>
   </div>
 </section>
 
@@ -165,15 +244,16 @@ zgx health zgx-ab12cd                      # verify connectivity</pre>
 
 <section>
   <div class="wrap">
-    <h2>Security</h2>
+    <h2>Safe by default</h2>
+    <p class="lead">It configures a machine over SSH, so it treats that like it matters.</p>
     <ul class="feat">
-      <li><b>Host-key TOFU + fingerprint.</b> Confirms an unknown host's
-        fingerprint before the password is sent; rejects changed keys.</li>
-      <li><b>No surprise code.</b> Raw remote commands shown; download-and-execute
-        lines require explicit confirmation.</li>
-      <li><b>Input validation.</b> No SSH-config injection; NIC names and device
-        IDs validated before use in remote commands.</li>
-      <li><b>No secrets.</b> Passwords never logged or written to disk; repo is
+      <li><b>Host-key TOFU + fingerprint.</b> Confirms an unknown host's fingerprint before
+        the password is sent; rejects changed keys.</li>
+      <li><b>No surprise code.</b> Raw remote commands shown; download-and-execute lines
+        require explicit confirmation.</li>
+      <li><b>Input validation.</b> No SSH-config injection; NIC names and device IDs are
+        validated before use in remote commands.</li>
+      <li><b>No secrets.</b> Passwords are never logged or written to disk; the repo is
         <code>gitleaks</code>-clean.</li>
     </ul>
   </div>
@@ -198,10 +278,10 @@ zgx health zgx-ab12cd                      # verify connectivity</pre>
 
 <footer>
   <div class="wrap">
-    zgx is MIT-licensed and based on HP's
+    ZGX CLI is MIT-licensed and based on HP's
     <a href="https://github.com/HPInc/ZGX-Toolkit">ZGX-Toolkit</a> (X11/MIT) —
     see <a href="https://github.com/AndersSol/zgx-cli/blob/main/NOTICE">NOTICE</a>.
-    Not affiliated with or endorsed by HP.
+    Not affiliated with or endorsed by HP or NVIDIA.
   </div>
 </footer>
 
