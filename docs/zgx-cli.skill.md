@@ -43,6 +43,15 @@ configures **HP ZGX nano** = **NVIDIA DGX Spark (GB10)** devices over SSH. It is
    `unknown SSH host … rejected` — that is expected, not a bug.
 6. **Hostname changed across re-image:** HP factory image → `zgx-XXXX`; NVIDIA DGX OS
    recovery image → `spark-XXXX`. Same device, different advertised name.
+7. **Agent sandboxes may block local mDNS.** If `zgx discover` fails with
+   `Failed setting up UDP server ... 224.0.0.251:5353: bind: operation not permitted`,
+   that is a local sandbox/network-permission problem, not a device problem. Re-run the
+   same read-only discovery with local-network permission/escalation instead of changing
+   ZGX settings.
+8. **Don't put temporary `known_hosts` directly in `/tmp` or `/private/tmp`.** `zgx`
+   secures the parent directory of the `--known-hosts` path and may fail with `chmod
+   /private/tmp: operation not permitted`. Use the normal `~/.ssh/known_hosts`, or a
+   tool-owned directory such as `<workspace>/work/zgx-known-hosts/known_hosts`.
 
 ## Command reference
 
@@ -133,8 +142,16 @@ by Codex (7 false-success / hang / secret-leak holes closed).
 | dns-register | `Service file written: true` | `Service file written: false` |
 
 ### Recipe A — Bring a device online (cold → passwordless SSH)
+0. **Agent** — establish local context first:
+   ```bash
+   command -v zgx && zgx --version
+   ```
+   If the user already gave a username, save it as `<U>` and use it immediately. If they
+   did not, ask for the username created during first-boot setup before interpreting auth
+   failures; do not keep retrying with the default `hp`.
 1. **Agent** — discover with retry. `zgx discover` **exits 0 even when it prints
-   `No ZGX devices found`**, so gate on a positive device row, not the exit code:
+   `No ZGX devices found`**, so gate on a positive device row, not the exit code. If a
+   sandbox blocks UDP 5353, re-run with local-network permission/escalation:
    ```bash
    found=
    for i in 1 2 3 4; do
@@ -146,11 +163,24 @@ by Codex (7 false-success / hang / secret-leak holes closed).
    ```
    Take the `spark-*` / `zgx-*` hostname. If `found` is empty, ask the user for the host/IP
    (e.g. from the device's SSH login banner).
-2. **User** — `zgx connect <host> --user <U>` (pass the host from step 1; bare
+2. **Agent** — confirm basic reachability before trying SSH auth:
+   ```bash
+   nc -vz -w 5 <host>.local 22 || nc -vz -w 5 <ip-or-ipv6> 22
+   ```
+   A successful TCP check proves the device is reachable even if key-auth is not yet set up.
+3. **Agent** — if `<U>` is known and key access may already exist, run:
+   ```bash
+   zgx health <host>.local --user <U>
+   ```
+   Success is `<host>.local: healthy`. `attempted methods [none publickey]` means SSH was
+   reached but key-based access is not set up for that user. `hp` failing does not matter
+   when the real user is different.
+4. **User** — if health is not already healthy, run `zgx connect <host> --user <U>`
+   (pass the host from step 1; bare
    `zgx connect` re-runs discovery and may pick a different device). They type the device
    password, then `yes` at the TOFU fingerprint prompt. Confirm their output contains
    `Key-based access works.`
-3. **Agent** — gate it: `zgx health <host> --user <U>` → require `<host>: healthy`.
+5. **Agent** — gate it: `zgx health <host> --user <U>` → require `<host>: healthy`.
    `unreachable` + the username/password hint ⇒ wrong `--user` or password; stop.
 
 ### Recipe B — Install an app and confirm it (idempotent)
