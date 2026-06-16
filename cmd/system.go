@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/AndersSol/zgx/internal/connect"
-	"github.com/AndersSol/zgx/internal/dnsreg"
-	"github.com/AndersSol/zgx/internal/install"
+	"github.com/AndersSol/zgx-cli/internal/connect"
+	"github.com/AndersSol/zgx-cli/internal/dnsreg"
+	"github.com/AndersSol/zgx-cli/internal/install"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )

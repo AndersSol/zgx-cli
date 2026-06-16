@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AndersSol/zgx/internal/discovery"
+	"github.com/AndersSol/zgx-cli/internal/discovery"
 	"github.com/spf13/cobra"
 )
 

@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	configpkg "github.com/AndersSol/zgx/internal/config"
+	configpkg "github.com/AndersSol/zgx-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 

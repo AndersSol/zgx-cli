@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AndersSol/zgx/internal/connect"
+	"github.com/AndersSol/zgx-cli/internal/connect"
 	"golang.org/x/crypto/ssh"
 )
 

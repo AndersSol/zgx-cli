@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	connectpkg "github.com/AndersSol/zgx/internal/connect"
+	connectpkg "github.com/AndersSol/zgx-cli/internal/connect"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )

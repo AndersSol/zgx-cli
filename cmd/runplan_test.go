@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AndersSol/zgx/internal/catalog"
+	"github.com/AndersSol/zgx-cli/internal/catalog"
 )
 
 func TestPipesToShell(t *testing.T) {

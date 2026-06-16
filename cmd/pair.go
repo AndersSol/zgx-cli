@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/AndersSol/zgx/internal/connect"
-	"github.com/AndersSol/zgx/internal/install"
-	"github.com/AndersSol/zgx/internal/pairing"
+	"github.com/AndersSol/zgx-cli/internal/connect"
+	"github.com/AndersSol/zgx-cli/internal/install"
+	"github.com/AndersSol/zgx-cli/internal/pairing"
 	"github.com/spf13/cobra"
 )
 

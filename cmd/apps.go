@@ -10,9 +10,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/AndersSol/zgx/internal/catalog"
-	"github.com/AndersSol/zgx/internal/connect"
-	"github.com/AndersSol/zgx/internal/install"
+	"github.com/AndersSol/zgx-cli/internal/catalog"
+	"github.com/AndersSol/zgx-cli/internal/connect"
+	"github.com/AndersSol/zgx-cli/internal/install"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )

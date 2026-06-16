@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AndersSol/zgx/internal/install"
+	"github.com/AndersSol/zgx-cli/internal/install"
 )
 
 const (

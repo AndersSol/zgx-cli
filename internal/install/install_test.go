@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AndersSol/zgx/internal/catalog"
+	"github.com/AndersSol/zgx-cli/internal/catalog"
 )
 
 func TestSudoCommand(t *testing.T) {

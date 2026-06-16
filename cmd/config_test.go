@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	configpkg "github.com/AndersSol/zgx/internal/config"
+	configpkg "github.com/AndersSol/zgx-cli/internal/config"
 )
 
 func TestConfigCommandsUseXDGConfigHome(t *testing.T) {

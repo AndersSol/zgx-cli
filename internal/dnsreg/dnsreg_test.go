@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AndersSol/zgx/internal/install"
+	"github.com/AndersSol/zgx-cli/internal/install"
 )
 
 func TestServiceFileXML(t *testing.T) {

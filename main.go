@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/AndersSol/zgx/cmd"
+	"github.com/AndersSol/zgx-cli/cmd"
 )
 
 func main() {

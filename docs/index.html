@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>zgx — configure HP ZGX nano over SSH</title>
+<title>ZGX CLI — configure HP ZGX nano over SSH (zgx)</title>
 <meta name="description" content="A portable, single-binary CLI that configures HP ZGX nano devices over SSH: discovery, key-based access, app installation, and ConnectX pairing. Linux, macOS, Windows." />
 <style>
   :root{
@@ -70,18 +70,18 @@
 
     <div class="dl">
       <div class="dl-grid" id="dl-grid">
-        <a class="btn" data-os="darwin" href="https://github.com/AndersSol/zgx/releases">
+        <a class="btn" data-os="darwin" href="https://github.com/AndersSol/zgx-cli/releases">
           <span class="os-ico">🍎</span>macOS<span class="arch" data-arch>Apple Silicon</span></a>
-        <a class="btn" data-os="linux" href="https://github.com/AndersSol/zgx/releases">
+        <a class="btn" data-os="linux" href="https://github.com/AndersSol/zgx-cli/releases">
           <span class="os-ico">🐧</span>Linux<span class="arch" data-arch>x86-64</span></a>
-        <a class="btn" data-os="windows" href="https://github.com/AndersSol/zgx/releases">
+        <a class="btn" data-os="windows" href="https://github.com/AndersSol/zgx-cli/releases">
           <span class="os-ico">🪟</span>Windows<span class="arch" data-arch>x86-64</span></a>
       </div>
       <div class="dl-meta" id="dl-meta">
-        <a href="https://github.com/AndersSol/zgx/releases">All builds &amp; checksums →</a>
+        <a href="https://github.com/AndersSol/zgx-cli/releases">All builds &amp; checksums →</a>
       </div>
       <div class="dl-secondary">
-        <a class="btn" href="https://github.com/AndersSol/zgx">View on GitHub</a>
+        <a class="btn" href="https://github.com/AndersSol/zgx-cli">View on GitHub</a>
       </div>
     </div>
 
@@ -118,10 +118,10 @@
     <h2>Install</h2>
     <p style="color:var(--muted);margin-top:-8px">Download a binary above, or:</p>
     <pre># Install with Go:
-go install github.com/AndersSol/zgx@latest
+go install github.com/AndersSol/zgx-cli@latest
 
 # …or build from source (Go 1.26+):
-git clone https://github.com/AndersSol/zgx.git &amp;&amp; cd zgx &amp;&amp; go build -o zgx .</pre>
+git clone https://github.com/AndersSol/zgx-cli.git &amp;&amp; cd zgx-cli &amp;&amp; go build -o zgx .</pre>
     <h2 style="margin-top:32px">Quick start</h2>
     <pre>zgx discover                              # find devices on the network
 zgx connect zgx-ab12cd --user hp          # set up SSH key access
@@ -187,7 +187,7 @@ zgx health zgx-ab12cd                      # verify connectivity</pre>
   <div class="wrap">
     zgx is MIT-licensed and based on HP's
     <a href="https://github.com/HPInc/ZGX-Toolkit">ZGX-Toolkit</a> (X11/MIT) —
-    see <a href="https://github.com/AndersSol/zgx/blob/main/NOTICE">NOTICE</a>.
+    see <a href="https://github.com/AndersSol/zgx-cli/blob/main/NOTICE">NOTICE</a>.
     Not affiliated with or endorsed by HP.
   </div>
 </footer>
@@ -198,7 +198,7 @@ zgx health zgx-ab12cd                      # verify connectivity</pre>
 // works while releases are marked pre-release. Falls back to the releases page
 // if the API is unavailable.
 (function () {
-  var REPO = "AndersSol/zgx";
+  var REPO = "AndersSol/zgx-cli";
   var RELEASES = "https://github.com/" + REPO + "/releases";
   var ARCH_LABEL = { amd64: "x86-64", arm64: "ARM64" };
   var DEFAULT_ARCH = { darwin: "arm64", linux: "amd64", windows: "amd64" };

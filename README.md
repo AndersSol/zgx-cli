@@ -1,4 +1,6 @@
-# zgx
+# ZGX CLI
+
+> The binary and command are named `zgx`. The repository is **zgx-cli** for discoverability.
 
 **A portable, single-binary CLI that configures HP ZGX nano devices over SSH — discovery, key-based access, app installation, and ConnectX pairing — from one command line on Linux, macOS, or Windows.**
 
@@ -42,20 +44,23 @@ ConnectX networking between devices.
 ### Download a binary (recommended)
 
 Grab the archive for your OS/arch from the
-[Releases page](https://github.com/AndersSol/zgx/releases), unpack it, and put
+[Releases page](https://github.com/AndersSol/zgx-cli/releases), unpack it, and put
 `zgx` on your `PATH`.
 
 ### Install with Go
 
 ```sh
-go install github.com/AndersSol/zgx@latest
+go install github.com/AndersSol/zgx-cli@latest
 ```
+
+> `go install` produces a binary named `zgx-cli`; rename it to `zgx`, or just use the
+> prebuilt release binaries (already named `zgx`).
 
 ### Build from source
 
 ```sh
-git clone https://github.com/AndersSol/zgx.git
-cd zgx
+git clone https://github.com/AndersSol/zgx-cli.git
+cd zgx-cli
 go build -o zgx .
 ```
 
@@ -146,7 +151,7 @@ built defensively:
 - **Transparent execution (no surprise code).** `install` prints the raw
   remote commands first and flags download-and-execute lines (`curl … | sh`,
   `curl … && bash …`) with a ⚠. `--all` and any plan containing such a command
-  require explicit `ja` confirmation.
+  require explicit `yes` confirmation.
 - **Input validation.** Values written into `~/.ssh/config` reject newlines and
   control characters (no SSH-directive injection); discovered NIC names and
   device identifiers are validated before they're interpolated into remote

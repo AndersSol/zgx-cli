@@ -1,4 +1,4 @@
-module github.com/AndersSol/zgx
+module github.com/AndersSol/zgx-cli
 
 go 1.26.4
 
