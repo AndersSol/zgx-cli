@@ -210,6 +210,6 @@ endorsed by HP.
 Built by **Anders Solstad**. If this is useful and you'd like to follow along,
 connect on LinkedIn:
 
-[**linkedin.com/in/anders.solstad**](https://www.linkedin.com/in/anders.solstad)
+[**linkedin.com/in/anders-solstad**](https://www.linkedin.com/in/anders-solstad)
 
 <img src="docs/linkedin-qr.svg" alt="LinkedIn QR — Anders Solstad" width="160" />
