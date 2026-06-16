@@ -20,12 +20,12 @@ const lshwFixture = `[
 func TestParseConnectXNICs(t *testing.T) {
 	nics, err := ParseConnectXNICs([]byte(lshwFixture))
 	if err != nil {
-		t.Fatalf("ParseConnectXNICs returnerte feil: %v", err)
+		t.Fatalf("ParseConnectXNICs returned error: %v", err)
 	}
 
 	want := []NIC{{LinuxDeviceName: "enp1s0f0"}}
 	if !slices.Equal(nics, want) {
-		t.Fatalf("ParseConnectXNICs = %#v, vil ha %#v", nics, want)
+		t.Fatalf("ParseConnectXNICs = %#v, want %#v", nics, want)
 	}
 }
 
@@ -33,10 +33,10 @@ func TestParseConnectXNICsSkipsArrayLogicalName(t *testing.T) {
 	fixture := `[{"product":"ConnectX","vendor":"Mellanox","logicalname":["enp1s0f0","enp1s0f1"]}]`
 	nics, err := ParseConnectXNICs([]byte(fixture))
 	if err != nil {
-		t.Fatalf("ParseConnectXNICs returnerte feil: %v", err)
+		t.Fatalf("ParseConnectXNICs returned error: %v", err)
 	}
 	if len(nics) != 0 {
-		t.Fatalf("ParseConnectXNICs med array logicalname = %#v, vil ha tom liste", nics)
+		t.Fatalf("ParseConnectXNICs with array logicalname = %#v, want empty list", nics)
 	}
 }
 
@@ -52,7 +52,7 @@ func TestParseIPv4(t *testing.T) {
 
 	for _, tt := range tests {
 		if got := ParseIPv4(tt.input); got != tt.want {
-			t.Errorf("ParseIPv4(%q) = %q, vil ha %q", tt.input, got, tt.want)
+			t.Errorf("ParseIPv4(%q) = %q, want %q", tt.input, got, tt.want)
 		}
 	}
 }
@@ -63,7 +63,7 @@ func TestBuildNetplan(t *testing.T) {
 		{LinuxDeviceName: "enp2s0f1"},
 	})
 	if err != nil {
-		t.Fatalf("BuildNetplan returnerte feil: %v", err)
+		t.Fatalf("BuildNetplan returned error: %v", err)
 	}
 
 	want := strings.Join([]string{
@@ -76,7 +76,7 @@ func TestBuildNetplan(t *testing.T) {
 		"      link-local: [ ipv4 ]",
 	}, "\n")
 	if config != want {
-		t.Fatalf("BuildNetplan = %q, vil ha %q", config, want)
+		t.Fatalf("BuildNetplan = %q, want %q", config, want)
 	}
 }
 
@@ -88,7 +88,7 @@ func TestBuildNetplanRejectsInjection(t *testing.T) {
 
 	for _, name := range tests {
 		if _, err := BuildNetplan([]NIC{{LinuxDeviceName: name}}); err == nil {
-			t.Fatalf("BuildNetplan(%q) returnerte nil error, vil ha injection-guard-feil", name)
+			t.Fatalf("BuildNetplan(%q) returned nil error, want injection guard error", name)
 		}
 	}
 }
@@ -99,14 +99,14 @@ func TestWriteNetplanCommand(t *testing.T) {
 
 	for _, want := range []string{"sudo -S sh -c", NetplanPath, "chmod 600 " + NetplanPath, "enp1", "s0"} {
 		if !strings.Contains(command, want) {
-			t.Fatalf("WriteNetplanCommand mangler %q i %q", want, command)
+			t.Fatalf("WriteNetplanCommand missing %q in %q", want, command)
 		}
 	}
 	if !strings.Contains(command, "'\\''") {
-		t.Fatalf("WriteNetplanCommand single-quote-escaper ikke payload: %q", command)
+		t.Fatalf("WriteNetplanCommand does not single-quote-escape payload: %q", command)
 	}
 	if !strings.HasPrefix(command, "sudo -S sh -c") {
-		t.Fatalf("WriteNetplanCommand starter ikke med sudo -S sh -c: %q", command)
+		t.Fatalf("WriteNetplanCommand does not start with sudo -S sh -c: %q", command)
 	}
 }
 
@@ -115,23 +115,23 @@ func TestWriteNetplanCommandSingleQuoteOuter(t *testing.T) {
 	command := WriteNetplanCommand(config)
 
 	if !strings.HasPrefix(command, "sudo -S sh -c '") {
-		t.Fatalf("WriteNetplanCommand() = %q, vil ha single-quote etter sh -c", command)
+		t.Fatalf("WriteNetplanCommand() = %q, want single quote after sh -c", command)
 	}
 	if strings.HasPrefix(command, "sudo -S sh -c \"") {
-		t.Fatalf("WriteNetplanCommand() bruker double-quote rundt sh -c: %q", command)
+		t.Fatalf("WriteNetplanCommand() uses double quote around sh -c: %q", command)
 	}
 	for _, want := range []string{NetplanPath, "chmod 600 " + NetplanPath} {
 		if !strings.Contains(command, want) {
-			t.Fatalf("WriteNetplanCommand mangler %q i %q", want, command)
+			t.Fatalf("WriteNetplanCommand missing %q in %q", want, command)
 		}
 	}
 
 	innerArg := strings.TrimPrefix(command, "sudo -S sh -c ")
 	if !strings.HasPrefix(innerArg, "'") || !strings.HasSuffix(innerArg, "'") {
-		t.Fatalf("inner command er ikke single-quote-omsluttet: %q", command)
+		t.Fatalf("inner command is not single-quote-wrapped: %q", command)
 	}
 	if !strings.Contains(command, "$(whoami)") {
-		t.Fatalf("testpayload mangler fra kommandoen: %q", command)
+		t.Fatalf("test payload missing from command: %q", command)
 	}
 }
 
@@ -148,22 +148,22 @@ func TestPairFlow(t *testing.T) {
 
 	nics, err := Pair(context.Background(), runner, "pw")
 	if err != nil {
-		t.Fatalf("Pair returnerte feil: %v", err)
+		t.Fatalf("Pair returned error: %v", err)
 	}
 	want := []NIC{{LinuxDeviceName: "enp1s0f0", IPv4Address: "10.0.0.5"}}
 	if !slices.Equal(nics, want) {
-		t.Fatalf("Pair nics = %#v, vil ha %#v", nics, want)
+		t.Fatalf("Pair nics = %#v, want %#v", nics, want)
 	}
 
 	writeCommand := runner.firstCommandContaining(NetplanPath)
 	if writeCommand == "" {
-		t.Fatalf("Pair kjørte ikke write-kommando; calls=%#v", runner.calls)
+		t.Fatalf("Pair did not run write command; calls=%#v", runner.calls)
 	}
 	if !strings.Contains(writeCommand, "enp1s0f0") || !strings.Contains(writeCommand, "link-local: [ ipv4 ]") {
-		t.Fatalf("write-kommando mangler netplan-YAML: %q", writeCommand)
+		t.Fatalf("write command missing netplan YAML: %q", writeCommand)
 	}
 	if !runner.called(ApplyNetplanCommand()) {
-		t.Fatalf("Pair kjørte ikke apply; calls=%#v", runner.calls)
+		t.Fatalf("Pair did not run apply; calls=%#v", runner.calls)
 	}
 }
 
@@ -176,10 +176,10 @@ func TestPairNoNICsIsLoudError(t *testing.T) {
 
 	_, err := Pair(context.Background(), runner, "pw")
 	if err == nil {
-		t.Fatal("Pair uten ConnectX-NIC-er returnerte nil error")
+		t.Fatal("Pair without ConnectX NICs returned nil error")
 	}
 	if runner.firstCommandContaining(NetplanPath) != "" || runner.called(ApplyNetplanCommand()) {
-		t.Fatalf("Pair kjørte write/apply ved tom NIC-liste; calls=%#v", runner.calls)
+		t.Fatalf("Pair ran write/apply with empty NIC list; calls=%#v", runner.calls)
 	}
 }
 

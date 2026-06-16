@@ -1,4 +1,4 @@
-// Package catalog eier den kuraterte app-katalogen uten CLI- eller UI-kobling.
+// Package catalog owns the curated app catalog without CLI or UI coupling.
 package catalog
 
 import (
@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-// App beskriver én installerbar app i katalogen.
+// App describes one installable app in the catalog.
 type App struct {
 	ID                 string   `json:"id"`
 	Name               string   `json:"name"`
@@ -22,7 +22,7 @@ type App struct {
 	Dependencies       []string `json:"dependencies,omitempty"`
 }
 
-// Category grupperer apper slik kilden gjør.
+// Category groups apps the same way the source does.
 type Category struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
@@ -35,17 +35,17 @@ var _ embed.FS
 //go:embed catalog.json
 var catalogJSON []byte
 
-// Load leser embedded katalog og feiler høyt ved ugyldig data.
+// Load reads the embedded catalog and fails loudly on invalid data.
 func Load() ([]Category, error) {
 	var cats []Category
 	if err := json.Unmarshal(catalogJSON, &cats); err != nil {
-		return nil, fmt.Errorf("katalog: parse av embedded catalog.json feilet: %w", err)
+		return nil, fmt.Errorf("catalog: parsing embedded catalog.json failed: %w", err)
 	}
 
 	return cats, nil
 }
 
-// AllApps flater ut katalogen for oppslag og validering.
+// AllApps flattens the catalog for lookup and validation.
 func AllApps(cats []Category) []App {
 	apps := make([]App, 0)
 	for _, cat := range cats {
@@ -55,7 +55,7 @@ func AllApps(cats []Category) []App {
 	return apps
 }
 
-// ByID finner en app uten å anta sortering i katalogen.
+// ByID finds an app without assuming catalog ordering.
 func ByID(cats []Category, id string) (App, bool) {
 	for _, app := range AllApps(cats) {
 		if app.ID == id {
@@ -66,7 +66,7 @@ func ByID(cats []Category, id string) (App, bool) {
 	return App{}, false
 }
 
-// CategoryByID finner en kategori uten å eksponere intern lagring.
+// CategoryByID finds a category without exposing internal storage.
 func CategoryByID(cats []Category, id string) (Category, bool) {
 	for _, cat := range cats {
 		if cat.ID == id {

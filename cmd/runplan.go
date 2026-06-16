@@ -13,13 +13,13 @@ var pipeToShellPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)\b(curl|wget)\b.*(&&|;)\s*(sudo\s+)?(ba)?sh\b`),
 }
 
-// PlanItem beskriver én rå kommando som skal vises før kjøring.
+// PlanItem describes one raw command to show before execution.
 type PlanItem struct {
 	ID, Command string
 }
 
-// PipesToShell rapporterer om en kommando rører pipe-to-shell (curl|sh-mønster)
-// - verdt å fremheve for brukeren (laster ned og kjører ekstern kode).
+// PipesToShell reports whether a command touches pipe-to-shell (curl|sh pattern),
+// worth highlighting to the user (it downloads and runs external code).
 func PipesToShell(command string) bool {
 	for _, pattern := range pipeToShellPatterns {
 		if pattern.MatchString(command) {
@@ -29,8 +29,8 @@ func PipesToShell(command string) bool {
 	return false
 }
 
-// RenderPlan bygger en lesbar plan over hva som vil kjøre: per app id + den
-// rå kommandoen, med en markør på pipe-to-shell-kommandoer.
+// RenderPlan builds a readable plan of what will run: each app id plus the raw
+// command, with a marker on pipe-to-shell commands.
 func RenderPlan(title string, items []PlanItem) string {
 	var b strings.Builder
 	fmt.Fprintln(&b, title)
@@ -44,8 +44,8 @@ func RenderPlan(title string, items []PlanItem) string {
 	return b.String()
 }
 
-// Confirm leser en ja/nei-bekreftelse fra in og skriver prompt til out.
-// Returnerer true kun ved eksakt "ja" (trimmet, case-insensitivt).
+// Confirm reads a yes/no confirmation from in and writes the prompt to out.
+// It returns true only for exact "yes" (trimmed, case-insensitive).
 func Confirm(in io.Reader, out io.Writer, prompt string) (bool, error) {
 	if _, err := fmt.Fprint(out, prompt); err != nil {
 		return false, err
@@ -56,5 +56,5 @@ func Confirm(in io.Reader, out io.Writer, prompt string) (bool, error) {
 		return false, err
 	}
 
-	return strings.EqualFold(strings.TrimSpace(answer), "ja"), nil
+	return strings.EqualFold(strings.TrimSpace(answer), "yes"), nil
 }

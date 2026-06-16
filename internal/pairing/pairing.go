@@ -1,4 +1,4 @@
-// Package pairing oppdager og konfigurerer ConnectX-NIC-er over en testbar
+// Package pairing discovers and configures ConnectX NICs over a testable
 // command runner.
 package pairing
 
@@ -29,14 +29,14 @@ const (
 
 var linuxDeviceNamePattern = regexp.MustCompile(`^enp[a-zA-Z0-9_-]+$`)
 
-// NIC beskriver et ConnectX nettverksinterface.
+// NIC describes a ConnectX network interface.
 type NIC struct {
 	LinuxDeviceName string
 	IPv4Address     string
 }
 
-// ParseConnectXNICs filtrerer lshw-nettverksobjekter ned til Mellanox/ConnectX
-// NIC-er med ett enkelt enp logicalname. IPv4Address fylles ikke her.
+// ParseConnectXNICs filters lshw network objects down to Mellanox/ConnectX NICs
+// with one single enp logicalname. IPv4Address is not filled here.
 func ParseConnectXNICs(lshwJSON []byte) ([]NIC, error) {
 	var entries []struct {
 		Product     string          `json:"product"`
@@ -67,12 +67,12 @@ func ParseConnectXNICs(lshwJSON []byte) ([]NIC, error) {
 	return nics, nil
 }
 
-// IPCommand bygger kommandoen som henter første IPv4-adresse for et interface.
+// IPCommand builds the command that fetches the first IPv4 address for an interface.
 func IPCommand(deviceName string) string {
 	return fmt.Sprintf("ip a l %s | awk '/inet / {print $2}'", deviceName)
 }
 
-// ParseIPv4 returnerer første IP-linje uten CIDR-suffiks.
+// ParseIPv4 returns the first IP line without the CIDR suffix.
 func ParseIPv4(ipOutput string) string {
 	line, _, _ := strings.Cut(strings.TrimSpace(ipOutput), "\n")
 	line = strings.TrimSpace(line)
@@ -80,7 +80,7 @@ func ParseIPv4(ipOutput string) string {
 	return ip
 }
 
-// BuildNetplan bygger netplan-YAML-en kilden skriver for ConnectX-interface.
+// BuildNetplan builds the netplan YAML the source writes for ConnectX interfaces.
 func BuildNetplan(nics []NIC) (string, error) {
 	lines := []string{
 		"network:",
@@ -89,7 +89,7 @@ func BuildNetplan(nics []NIC) (string, error) {
 	}
 	for _, nic := range nics {
 		if !linuxDeviceNamePattern.MatchString(nic.LinuxDeviceName) {
-			return "", fmt.Errorf("ugyldig Linux device name %q", nic.LinuxDeviceName)
+			return "", fmt.Errorf("invalid Linux device name %q", nic.LinuxDeviceName)
 		}
 		lines = append(lines,
 			fmt.Sprintf("    %s:", nic.LinuxDeviceName),
@@ -99,7 +99,7 @@ func BuildNetplan(nics []NIC) (string, error) {
 	return strings.Join(lines, "\n"), nil
 }
 
-// WriteNetplanCommand bygger sudo-kommandoen som skriver og sikrer netplan-filen.
+// WriteNetplanCommand builds the sudo command that writes and secures the netplan file.
 func WriteNetplanCommand(config string) string {
 	inner := fmt.Sprintf("echo '%s' > %s && chmod 600 %s", singleQuoteEscape(config), NetplanPath, NetplanPath)
 	return "sudo -S sh -c " + singleQuote(inner)
@@ -113,18 +113,18 @@ func RemoveNetplanCommand() string {
 	return "sudo -S rm -f " + NetplanPath
 }
 
-// PairDetails henter ConnectX-NIC-er og deres nåværende IPv4-adresser.
+// PairDetails fetches ConnectX NICs and their current IPv4 addresses.
 func PairDetails(ctx context.Context, runner install.Runner) ([]NIC, error) {
 	if runner == nil {
-		return nil, fmt.Errorf("pairing: Runner mangler")
+		return nil, fmt.Errorf("pairing: Runner missing")
 	}
 
 	result, err := runner.Run(ctx, LshwCommand, "", lshwTimeout, noRetry)
 	if err != nil {
-		return nil, fmt.Errorf("kjør lshw: %w", err)
+		return nil, fmt.Errorf("run lshw: %w", err)
 	}
 	if result.ExitCode != 0 {
-		return nil, fmt.Errorf("lshw feilet med exit %d: %s", result.ExitCode, strings.TrimSpace(result.Stderr))
+		return nil, fmt.Errorf("lshw failed with exit %d: %s", result.ExitCode, strings.TrimSpace(result.Stderr))
 	}
 
 	nics, err := ParseConnectXNICs([]byte(result.Stdout))
@@ -134,14 +134,14 @@ func PairDetails(ctx context.Context, runner install.Runner) ([]NIC, error) {
 
 	for i := range nics {
 		if !linuxDeviceNamePattern.MatchString(nics[i].LinuxDeviceName) {
-			return nil, fmt.Errorf("ugyldig Linux device name %q", nics[i].LinuxDeviceName)
+			return nil, fmt.Errorf("invalid Linux device name %q", nics[i].LinuxDeviceName)
 		}
 		result, err := runner.Run(ctx, IPCommand(nics[i].LinuxDeviceName), "", ipTimeout, noRetry)
 		if err != nil {
-			return nil, fmt.Errorf("hent IP for %s: %w", nics[i].LinuxDeviceName, err)
+			return nil, fmt.Errorf("get IP for %s: %w", nics[i].LinuxDeviceName, err)
 		}
 		if result.ExitCode != 0 {
-			return nil, fmt.Errorf("hent IP for %s feilet med exit %d: %s", nics[i].LinuxDeviceName, result.ExitCode, strings.TrimSpace(result.Stderr))
+			return nil, fmt.Errorf("get IP for %s failed with exit %d: %s", nics[i].LinuxDeviceName, result.ExitCode, strings.TrimSpace(result.Stderr))
 		}
 		nics[i].IPv4Address = ParseIPv4(result.Stdout)
 	}
@@ -149,14 +149,14 @@ func PairDetails(ctx context.Context, runner install.Runner) ([]NIC, error) {
 	return nics, nil
 }
 
-// Pair oppdager ConnectX-NIC-er, skriver netplan og anvender konfigurasjonen.
+// Pair discovers ConnectX NICs, writes netplan, and applies the configuration.
 func Pair(ctx context.Context, runner install.Runner, sudoPassword string) ([]NIC, error) {
 	nics, err := PairDetails(ctx, runner)
 	if err != nil {
 		return nil, err
 	}
 	if len(nics) == 0 {
-		return nil, fmt.Errorf("ingen ConnectX-NIC-er funnet")
+		return nil, fmt.Errorf("no ConnectX NICs found")
 	}
 
 	config, err := BuildNetplan(nics)
@@ -164,25 +164,25 @@ func Pair(ctx context.Context, runner install.Runner, sudoPassword string) ([]NI
 		return nil, err
 	}
 
-	if err := runSudo(ctx, runner, WriteNetplanCommand(config), sudoPassword, "skriv netplan"); err != nil {
+	if err := runSudo(ctx, runner, WriteNetplanCommand(config), sudoPassword, "write netplan"); err != nil {
 		return nil, err
 	}
-	if err := runSudo(ctx, runner, ApplyNetplanCommand(), sudoPassword, "anvend netplan"); err != nil {
+	if err := runSudo(ctx, runner, ApplyNetplanCommand(), sudoPassword, "apply netplan"); err != nil {
 		return nil, err
 	}
 
 	return nics, nil
 }
 
-// Unpair fjerner ConnectX-netplan-filen og anvender netplan.
+// Unpair removes the ConnectX netplan file and applies netplan.
 func Unpair(ctx context.Context, runner install.Runner, sudoPassword string) error {
 	if runner == nil {
-		return fmt.Errorf("pairing: Runner mangler")
+		return fmt.Errorf("pairing: Runner missing")
 	}
-	if err := runSudo(ctx, runner, RemoveNetplanCommand(), sudoPassword, "fjern netplan"); err != nil {
+	if err := runSudo(ctx, runner, RemoveNetplanCommand(), sudoPassword, "remove netplan"); err != nil {
 		return err
 	}
-	return runSudo(ctx, runner, ApplyNetplanCommand(), sudoPassword, "anvend netplan")
+	return runSudo(ctx, runner, ApplyNetplanCommand(), sudoPassword, "apply netplan")
 }
 
 func runSudo(ctx context.Context, runner install.Runner, command, sudoPassword, label string) error {
@@ -191,7 +191,7 @@ func runSudo(ctx context.Context, runner install.Runner, command, sudoPassword, 
 		return fmt.Errorf("%s: %w", label, err)
 	}
 	if result.ExitCode != 0 {
-		return fmt.Errorf("%s feilet med exit %d: %s", label, result.ExitCode, strings.TrimSpace(result.Stderr))
+		return fmt.Errorf("%s failed with exit %d: %s", label, result.ExitCode, strings.TrimSpace(result.Stderr))
 	}
 	return nil
 }

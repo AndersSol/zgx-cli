@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// HostBlock bygger en ~/.ssh/config Host-blokk for en ZGX-enhet, omsluttet av
-// zgx-marker-kommentarer slik at MergeHostConfig kan finne og erstatte den
-// idempotent uten å røre brukerens øvrige config.
+// HostBlock builds a ~/.ssh/config Host block for a ZGX device, wrapped in
+// zgx marker comments so MergeHostConfig can find and replace it idempotently
+// without touching the user's remaining config.
 func HostBlock(alias, hostName, user string, port int, identityFile string) string {
 	return fmt.Sprintf(`# >>> zgx managed: %s >>>
 Host %s
@@ -22,9 +22,9 @@ Host %s
 `, alias, alias, hostName, user, port, identityFile, alias)
 }
 
-// MergeHostConfig fletter en Host-blokk for `alias` inn i eksisterende
-// config-innhold. IDEMPOTENT: finnes en zgx-managed blokk for samme alias
-// allerede, ERSTATT den; ellers APPEND. Brukerens andre linjer bevares uendret.
+// MergeHostConfig merges a Host block for `alias` into existing config content.
+// IDEMPOTENT: if a zgx-managed block for the same alias already exists, replace
+// it; otherwise append it. The user's other lines are preserved unchanged.
 func MergeHostConfig(existing, alias, block string) string {
 	startMarker := fmt.Sprintf("# >>> zgx managed: %s >>>", alias)
 	endMarker := fmt.Sprintf("# <<< zgx managed: %s <<<", alias)
@@ -59,8 +59,8 @@ func MergeHostConfig(existing, alias, block string) string {
 	return existing + separator + normalizeBlock(block)
 }
 
-// WriteHostConfig leser configPath (tom hvis fraværende), fletter inn blokken,
-// og skriver tilbake med perms 0600. Oppretter mappa (0700) ved behov.
+// WriteHostConfig reads configPath (empty if missing), merges in the block, and
+// writes it back with 0600 permissions. It creates the directory (0700) if needed.
 func WriteHostConfig(configPath, alias, hostName, user string, port int, identityFile string) error {
 	for _, item := range []struct {
 		field string
@@ -98,14 +98,14 @@ func WriteHostConfig(configPath, alias, hostName, user string, port int, identit
 
 func validateConfigValue(field, value string) error {
 	if value == "" {
-		return fmt.Errorf("ugyldig ssh config-verdi for %s: tom", field)
+		return fmt.Errorf("invalid ssh config value for %s: empty", field)
 	}
 	if strings.TrimSpace(value) != value {
-		return fmt.Errorf("ugyldig ssh config-verdi for %s: innledende/avsluttende whitespace", field)
+		return fmt.Errorf("invalid ssh config value for %s: leading/trailing whitespace", field)
 	}
 	for _, r := range value {
 		if r == '\n' || r == '\r' || (r < 0x20 && r != ' ') {
-			return fmt.Errorf("ugyldig ssh config-verdi for %s: kontrolltegn", field)
+			return fmt.Errorf("invalid ssh config value for %s: control character", field)
 		}
 	}
 	return nil

@@ -17,14 +17,14 @@ import (
 
 const defaultSSHTimeout = 15 * time.Second
 
-// Target beskriver en SSH-endepunktadresse.
+// Target describes an SSH endpoint address.
 type Target struct {
 	Host string
 	User string
 	Port int
 }
 
-// Addr returnerer host:port, med port 22 som default.
+// Addr returns host:port, using port 22 as the default.
 func (t Target) Addr() string {
 	port := t.Port
 	if port == 0 {
@@ -33,20 +33,20 @@ func (t Target) Addr() string {
 	return net.JoinHostPort(t.Host, fmt.Sprintf("%d", port))
 }
 
-// AuthorizedKeysCommand bygger en idempotent remote shell-kommando som legger
-// publicKeyLine i ~/.ssh/authorized_keys bare hvis den ikke alt finnes.
+// AuthorizedKeysCommand builds an idempotent remote shell command that adds
+// publicKeyLine to ~/.ssh/authorized_keys only if it is not already present.
 func AuthorizedKeysCommand(publicKeyLine string) string {
 	escaped := shellSingleQuote(publicKeyLine)
 	return "mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && grep -qxF " + escaped + " ~/.ssh/authorized_keys || printf '%s\\n' " + escaped + " >> ~/.ssh/authorized_keys"
 }
 
-// Bootstrap kobler til target med passord-auth og installerer publicKeyLine.
+// Bootstrap connects to target with password auth and installs publicKeyLine.
 func Bootstrap(ctx context.Context, t Target, password, publicKeyLine string, hostKey ssh.HostKeyCallback) error {
 	config := sshClientConfig(ctx, t.User, []ssh.AuthMethod{ssh.Password(password)}, hostKey)
 	return runSSHCommand(ctx, t, config, AuthorizedKeysCommand(publicKeyLine), "bootstrap authorized_keys")
 }
 
-// TestKeyAuth kobler til med privatnøkkel og kjører true.
+// TestKeyAuth connects with a private key and runs true.
 func TestKeyAuth(ctx context.Context, t Target, privateKeyPath string, hostKey ssh.HostKeyCallback) error {
 	privateKey, err := os.ReadFile(privateKeyPath)
 	if err != nil {
@@ -61,23 +61,23 @@ func TestKeyAuth(ctx context.Context, t Target, privateKeyPath string, hostKey s
 	return runSSHCommand(ctx, t, config, "true", "test key auth")
 }
 
-// FingerprintSHA256 returnerer OpenSSH-kompatibelt SHA256-fingerprint for key.
+// FingerprintSHA256 returns an OpenSSH-compatible SHA256 fingerprint for key.
 func FingerprintSHA256(key ssh.PublicKey) string {
 	return ssh.FingerprintSHA256(key)
 }
 
-// KnownHostsCallback verifiserer mot knownHostsPath med TOFU for ukjente hosts.
+// KnownHostsCallback verifies against knownHostsPath with TOFU for unknown hosts.
 func KnownHostsCallback(knownHostsPath string) (ssh.HostKeyCallback, error) {
 	return KnownHostsCallbackWithConfirm(knownHostsPath, func(hostname, fingerprint string) (bool, error) {
 		return true, nil
 	})
 }
 
-// KnownHostsCallbackWithConfirm verifiserer mot knownHostsPath og spør confirm
-// før en ukjent host legges til. Kjente host-key-mismatch avvises alltid.
+// KnownHostsCallbackWithConfirm verifies against knownHostsPath and asks confirm
+// before an unknown host is added. Known host-key mismatches are always rejected.
 func KnownHostsCallbackWithConfirm(knownHostsPath string, confirm func(hostname, fingerprint string) (bool, error)) (ssh.HostKeyCallback, error) {
 	if confirm == nil {
-		return nil, fmt.Errorf("known_hosts confirm callback mangler")
+		return nil, fmt.Errorf("known_hosts confirm callback missing")
 	}
 	if dir := filepath.Dir(knownHostsPath); dir != "." && dir != "" {
 		if err := ensureSecureDir(dir); err != nil {
@@ -114,10 +114,10 @@ func KnownHostsCallbackWithConfirm(knownHostsPath string, confirm func(hostname,
 		if errors.As(err, &keyErr) && len(keyErr.Want) == 0 {
 			accepted, confirmErr := confirm(hostname, FingerprintSHA256(key))
 			if confirmErr != nil {
-				return fmt.Errorf("bekreft ukjent SSH host %q: %w", hostname, confirmErr)
+				return fmt.Errorf("confirm unknown SSH host %q: %w", hostname, confirmErr)
 			}
 			if !accepted {
-				return fmt.Errorf("ukjent SSH host %q avvist", hostname)
+				return fmt.Errorf("unknown SSH host %q rejected", hostname)
 			}
 			if appendErr := appendKnownHost(knownHostsPath, hostname, key); appendErr != nil {
 				return appendErr

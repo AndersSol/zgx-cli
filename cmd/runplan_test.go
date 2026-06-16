@@ -23,47 +23,47 @@ func TestPipesToShell(t *testing.T) {
 
 	for _, tt := range tests {
 		if got := PipesToShell(tt.command); got != tt.want {
-			t.Errorf("PipesToShell(%q) = %v, vil ha %v", tt.command, got, tt.want)
+			t.Errorf("PipesToShell(%q) = %v, want %v", tt.command, got, tt.want)
 		}
 	}
 }
 
 func TestRenderPlan(t *testing.T) {
-	plan := RenderPlan("Installerer:", []PlanItem{
+	plan := RenderPlan("Installing:", []PlanItem{
 		{ID: "ollama", Command: "curl -fsSL x | sudo sh"},
 		{ID: "curl", Command: "sudo apt install -y curl"},
 	})
 
 	for _, want := range []string{"ollama", "curl -fsSL x | sudo sh", "curl", "sudo apt install -y curl"} {
 		if !strings.Contains(plan, want) {
-			t.Fatalf("RenderPlan mangler %q:\n%s", want, plan)
+			t.Fatalf("RenderPlan missing %q:\n%s", want, plan)
 		}
 	}
 
 	lines := strings.Split(plan, "\n")
 	if !strings.Contains(lines[1], "⚠") {
-		t.Fatalf("pipe-to-shell-linjen mangler markør: %q", lines[1])
+		t.Fatalf("pipe-to-shell line missing marker: %q", lines[1])
 	}
 	if strings.Contains(lines[3], "⚠") {
-		t.Fatalf("apt-linjen fikk uventet markør: %q", lines[3])
+		t.Fatalf("apt line got unexpected marker: %q", lines[3])
 	}
 }
 
 func TestInstallPlanShownIncludesExpandedDeps(t *testing.T) {
 	cats, err := catalog.Load()
 	if err != nil {
-		t.Fatalf("catalog.Load() feilet: %v", err)
+		t.Fatalf("catalog.Load() failed: %v", err)
 	}
 
 	items, err := installPlanItems(cats, []string{"jupyter-lab"})
 	if err != nil {
-		t.Fatalf("installPlanItems() feilet: %v", err)
+		t.Fatalf("installPlanItems() failed: %v", err)
 	}
 
-	plan := RenderPlan("Installerer:", items)
+	plan := RenderPlan("Installing:", items)
 	for _, want := range []string{"miniforge", "curl -fsSL \"$MINIFORGE_URL\"", "⚠"} {
 		if !strings.Contains(plan, want) {
-			t.Fatalf("install-plan mangler %q:\n%s", want, plan)
+			t.Fatalf("install plan missing %q:\n%s", want, plan)
 		}
 	}
 }
@@ -73,24 +73,24 @@ func TestConfirm(t *testing.T) {
 		input string
 		want  bool
 	}{
-		{input: "ja\n", want: true},
-		{input: "JA\n", want: true},
-		{input: "nei\n", want: false},
+		{input: "yes\n", want: true},
+		{input: "YES\n", want: true},
+		{input: "no\n", want: false},
 		{input: "y\n", want: false},
 		{input: "", want: false},
 	}
 
 	for _, tt := range tests {
 		var out bytes.Buffer
-		got, err := Confirm(strings.NewReader(tt.input), &out, "Skriv ja: ")
+		got, err := Confirm(strings.NewReader(tt.input), &out, "Type yes: ")
 		if err != nil {
-			t.Fatalf("Confirm(%q) returnerte feil: %v", tt.input, err)
+			t.Fatalf("Confirm(%q) returned error: %v", tt.input, err)
 		}
 		if got != tt.want {
-			t.Errorf("Confirm(%q) = %v, vil ha %v", tt.input, got, tt.want)
+			t.Errorf("Confirm(%q) = %v, want %v", tt.input, got, tt.want)
 		}
-		if out.String() != "Skriv ja: " {
-			t.Errorf("Confirm skrev prompt %q, vil ha %q", out.String(), "Skriv ja: ")
+		if out.String() != "Type yes: " {
+			t.Errorf("Confirm wrote prompt %q, want %q", out.String(), "Type yes: ")
 		}
 	}
 }

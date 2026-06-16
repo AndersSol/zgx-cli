@@ -18,7 +18,7 @@ func discoverCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "discover",
-		Short: "Finn ZGX-enheter på nettet (mDNS)",
+		Short: "Find ZGX devices on the network (mDNS)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			devices, err := discovery.DiscoverTimeout(time.Duration(timeoutSeconds) * time.Second)
 			if err != nil {
@@ -27,7 +27,7 @@ func discoverCmd() *cobra.Command {
 
 			out := cmd.OutOrStdout()
 			if len(devices) == 0 {
-				fmt.Fprintln(out, "Ingen ZGX-enheter funnet.")
+				fmt.Fprintln(out, "No ZGX devices found.")
 				return nil
 			}
 
@@ -43,6 +43,6 @@ func discoverCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().IntVar(&timeoutSeconds, "timeout", 5, "Hvor lenge discovery skal kjøre, i sekunder")
+	cmd.Flags().IntVar(&timeoutSeconds, "timeout", 5, "How long discovery should run, in seconds")
 	return cmd
 }

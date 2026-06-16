@@ -1,5 +1,5 @@
-// Package install orkestrerer installasjon, verifikasjon og avinstallasjon
-// over en testbar remote command runner.
+// Package install orchestrates installation, verification, and uninstallation
+// over a testable remote command runner.
 package install
 
 import (
@@ -20,20 +20,20 @@ const (
 
 var sudoPattern = regexp.MustCompile(`sudo\s+`)
 
-// CommandResult er utfallet av én remote kommando.
+// CommandResult is the outcome of one remote command.
 type CommandResult struct {
 	ExitCode       int
 	Stdout, Stderr string
 }
 
-// Runner kjører en remote shell-kommando. sudoPassword skrives til stdin hvis
-// kommandoen starter med "sudo -S". Abstraksjon for testbarhet (ekte = SSHRunner).
+// Runner runs a remote shell command. sudoPassword is written to stdin if the
+// command starts with "sudo -S". Abstraction for testability (real = SSHRunner).
 type Runner interface {
 	Run(ctx context.Context, command, sudoPassword string, timeout time.Duration, retries int) (CommandResult, error)
 }
 
-// SudoCommand transformerer en installCommand etter kildens semantikk.
-// Returnerer (kommando som skal kjøres, usesSudo). Ved sudo: "sudo -S bash -c '<escaped uten sudo>'".
+// SudoCommand transforms an installCommand using the source semantics.
+// It returns (command to run, usesSudo). With sudo: "sudo -S bash -c '<escaped without sudo>'".
 func SudoCommand(rawCommand string) (command string, usesSudo bool) {
 	usesSudo = strings.Contains(rawCommand, "sudo")
 	if !usesSudo {
@@ -44,13 +44,12 @@ func SudoCommand(rawCommand string) (command string, usesSudo bool) {
 	return "sudo -S bash -c " + singleQuote(commandWithoutSudo), true
 }
 
-// Report beskriver samlet utfall for en installasjons- eller
-// avinstallasjonsrunde.
+// Report describes the aggregate outcome for an installation or uninstallation run.
 type Report struct {
 	Installed, AlreadyInstalled, Failed, Skipped []string
 }
 
-// Engine orkestrerer install/verify/uninstall over en Runner.
+// Engine orchestrates install/verify/uninstall over a Runner.
 type Engine struct {
 	Runner Runner
 }
@@ -83,9 +82,9 @@ func (e *Engine) Install(ctx context.Context, cats []catalog.Category, selectedI
 	return report, nil
 }
 
-// InstallPlan returnerer appene Install vil prosessere, i rekkefølge:
-// base-system først (hvis den finnes), deretter ekspanderte dependencies +
-// valgte, i InstallOrder. Brukes av cmd-laget for å vise hele install-planen.
+// InstallPlan returns the apps Install will process, in order: base-system first
+// (if present), then expanded dependencies + selected apps, in InstallOrder. Used
+// by the cmd layer to show the full install plan.
 func InstallPlan(cats []catalog.Category, selectedIDs []string) ([]catalog.App, error) {
 	selected, err := resolveSelected(cats, selectedIDs)
 	if err != nil {
@@ -110,7 +109,7 @@ func InstallPlan(cats []catalog.Category, selectedIDs []string) ([]catalog.App, 
 	return ordered, nil
 }
 
-// Verify returnerer appID -> installert for de eksplisitt valgte appene.
+// Verify returns appID -> installed for the explicitly selected apps.
 func (e *Engine) Verify(ctx context.Context, cats []catalog.Category, selectedIDs []string) (map[string]bool, error) {
 	if err := e.ready(); err != nil {
 		return nil, err
@@ -144,8 +143,8 @@ func (e *Engine) Uninstall(ctx context.Context, cats []catalog.Category, selecte
 	if err != nil {
 		return Report{}, err
 	}
-	// Uninstall ekspanderer bevisst ikke dependencies: delte deps kan være i
-	// bruk av andre apper. Reverse InstallOrder gjelder kun innen valgt sett.
+	// Uninstall intentionally does not expand dependencies: shared deps may be in
+	// use by other apps. Reverse InstallOrder applies only within the selected set.
 	slices.Reverse(ordered)
 
 	report := Report{}
@@ -169,7 +168,7 @@ func (e *Engine) Uninstall(ctx context.Context, cats []catalog.Category, selecte
 
 func (e *Engine) ready() error {
 	if e == nil || e.Runner == nil {
-		return fmt.Errorf("install: Runner mangler")
+		return fmt.Errorf("install: Runner missing")
 	}
 	return nil
 }
@@ -200,7 +199,7 @@ func resolveSelected(cats []catalog.Category, selectedIDs []string) ([]catalog.A
 		}
 		app, ok := catalog.ByID(cats, id)
 		if !ok {
-			return nil, fmt.Errorf("install: ukjent app-id %q", id)
+			return nil, fmt.Errorf("install: unknown app id %q", id)
 		}
 		apps = append(apps, app)
 		seen[id] = struct{}{}
@@ -222,7 +221,7 @@ func expandDependencies(cats []catalog.Category, selected []catalog.App) ([]cata
 		for _, depID := range app.Dependencies {
 			dep, ok := catalog.ByID(cats, depID)
 			if !ok {
-				return fmt.Errorf("install: %s har ukjent dependency %q", app.ID, depID)
+				return fmt.Errorf("install: %s has unknown dependency %q", app.ID, depID)
 			}
 			if err := add(dep); err != nil {
 				return err

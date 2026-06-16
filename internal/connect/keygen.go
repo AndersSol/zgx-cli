@@ -12,18 +12,18 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// KeyPair peker på en generert (eller eksisterende) ed25519-nøkkel på disk.
+// KeyPair points to a generated (or existing) ed25519 key on disk.
 type KeyPair struct {
 	PrivateKeyPath string
 	PublicKeyPath  string
 	PublicKeyLine  string
 }
 
-// GenerateKeyPair sikrer at et ed25519-nøkkelpar finnes i sshDir (typisk ~/.ssh).
-// IDEMPOTENT + SIKKERHET: hvis privatnøkkelen ALLEREDE finnes, returner den
-// eksisterende UTEN å regenerere/overskrive (å overskrive ville foreldreløst-gjøre
-// nøkler som alt er lagt i remote authorized_keys). comment settes på pub-linja
-// (f.eks. "zgx" eller user@host).
+// GenerateKeyPair ensures that an ed25519 key pair exists in sshDir (typically ~/.ssh).
+// IDEMPOTENT + SAFETY: if the private key ALREADY exists, return the existing
+// one WITHOUT regenerating/overwriting it (overwriting would orphan keys already
+// placed in remote authorized_keys). comment is set on the pub line (for example
+// "zgx" or user@host).
 func GenerateKeyPair(sshDir, keyName, comment string) (KeyPair, error) {
 	if keyName == "" {
 		keyName = "id_ed25519"

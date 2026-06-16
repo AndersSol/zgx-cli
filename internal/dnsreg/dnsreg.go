@@ -1,4 +1,4 @@
-// Package dnsreg registrerer ZGX-enheter i Avahi for stabil mDNS-oppdagelse.
+// Package dnsreg registers ZGX devices in Avahi for stable mDNS discovery.
 package dnsreg
 
 import (
@@ -21,13 +21,13 @@ const (
 
 var deviceIdentifierPattern = regexp.MustCompile(`^[0-9a-f]{8}$`)
 
-// DeviceIdentifierCommand returnerer den faste remote-kommandoen som henter
-// default-NIC-ens MAC og hasher den til en 8-tegns ID.
+// DeviceIdentifierCommand returns the fixed remote command that gets the default
+// NIC's MAC and hashes it to an 8-character ID.
 func DeviceIdentifierCommand() string {
 	return "ip route show default | awk '/default/ { print $5 }' | head -1 | xargs -I {} cat /sys/class/net/{}/address | tr -d ':' | sha256sum | cut -c1-8"
 }
 
-// ServiceFileXML bygger avahi service-group-XML for identifier (XML-escaped).
+// ServiceFileXML builds Avahi service-group XML for identifier (XML-escaped).
 func ServiceFileXML(identifier string) string {
 	return fmt.Sprintf(`<service-group>
   <name>%s</name>
@@ -38,13 +38,13 @@ func ServiceFileXML(identifier string) string {
 </service-group>`, escapeXML(identifier), ServiceType, ServicePort)
 }
 
-// CreateServiceFileCommand bygger sudo-kommandoen som skriver avahi service-fila.
+// CreateServiceFileCommand builds the sudo command that writes the Avahi service file.
 func CreateServiceFileCommand(xml string) string {
 	inner := "echo " + singleQuote(xml) + " | tee " + ServiceFilePath + " > /dev/null"
 	return "sudo -S bash -c " + singleQuote(inner)
 }
 
-// RestartAvahiCommand returnerer den faste restart-kommandoen.
+// RestartAvahiCommand returns the fixed restart command.
 func RestartAvahiCommand() string {
 	return "sudo -S systemctl restart avahi-daemon"
 }
@@ -56,42 +56,42 @@ type Result struct {
 	Note               string
 }
 
-// Register kjører hele dns-register-flyten over runner.
+// Register runs the full dns-register flow over runner.
 func Register(ctx context.Context, runner install.Runner, sudoPassword string) (Result, error) {
 	if runner == nil {
-		return Result{}, fmt.Errorf("dns-register: Runner mangler")
+		return Result{}, fmt.Errorf("dns-register: Runner missing")
 	}
 
 	idResult, err := runner.Run(ctx, DeviceIdentifierCommand(), "", commandTimeout, 0)
 	if err != nil {
-		return Result{}, fmt.Errorf("dns-register: hent device-id: %w", err)
+		return Result{}, fmt.Errorf("dns-register: get device id: %w", err)
 	}
 	if idResult.ExitCode != 0 {
-		return Result{}, fmt.Errorf("dns-register: hent device-id feilet med exit %d: %s", idResult.ExitCode, strings.TrimSpace(idResult.Stderr))
+		return Result{}, fmt.Errorf("dns-register: get device id failed with exit %d: %s", idResult.ExitCode, strings.TrimSpace(idResult.Stderr))
 	}
 	identifier := strings.TrimSpace(idResult.Stdout)
 	if identifier == "" {
-		return Result{}, fmt.Errorf("dns-register: tom device-id fra kommando %q", DeviceIdentifierCommand())
+		return Result{}, fmt.Errorf("dns-register: empty device id from command %q", DeviceIdentifierCommand())
 	}
 	if !deviceIdentifierPattern.MatchString(identifier) {
-		return Result{}, fmt.Errorf("dns-register: uventet device-id-format: %q", identifier)
+		return Result{}, fmt.Errorf("dns-register: unexpected device id format: %q", identifier)
 	}
 
 	result := Result{Identifier: identifier}
 	xml := ServiceFileXML(identifier)
 	createResult, err := runner.Run(ctx, CreateServiceFileCommand(xml), sudoPassword, commandTimeout, 0)
 	if err != nil {
-		return Result{}, fmt.Errorf("dns-register: skriv service-fil: %w", err)
+		return Result{}, fmt.Errorf("dns-register: write service file: %w", err)
 	}
 	if createResult.ExitCode != 0 {
-		return Result{}, fmt.Errorf("dns-register: skriv service-fil feilet med exit %d: %s", createResult.ExitCode, strings.TrimSpace(createResult.Stderr))
+		return Result{}, fmt.Errorf("dns-register: write service file failed with exit %d: %s", createResult.ExitCode, strings.TrimSpace(createResult.Stderr))
 	}
 	result.ServiceFileWritten = true
 
 	restartResult, err := runner.Run(ctx, RestartAvahiCommand(), sudoPassword, commandTimeout, 0)
 	if err != nil || restartResult.ExitCode != 0 {
 		result.AvahiRestarted = false
-		result.Note = "Avahi kunne ikke restartes; service-fila er skrevet og aktiveres ved neste omstart."
+		result.Note = "Avahi could not be restarted; the service file is written and will be activated on the next reboot."
 		return result, nil
 	}
 

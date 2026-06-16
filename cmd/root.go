@@ -1,6 +1,6 @@
-// Package cmd implementerer zgx-CLI-en — en tynn front-end over motoren i
-// internal/. Front-ender (CLI, TUI, fremtidig macOS-app) holder ingen logikk
-// selv.
+// Package cmd implements the zgx CLI, a thin front end over the engine in
+// internal/. Front ends (CLI, TUI, future macOS app) keep no logic themselves.
+//
 package cmd
 
 import (
@@ -11,32 +11,32 @@ import (
 
 var version = "dev"
 
-// rootCmd er basiskommandoen som kjøres som `zgx`.
+// rootCmd is the base command run as `zgx`.
 var rootCmd = &cobra.Command{
 	Use:     "zgx",
-	Short:   "Konfigurer HP ZGX nano over SSH",
+	Short:   "Configure HP ZGX nano over SSH",
 	Version: version,
-	Long: `zgx oppdager, kobler til og konfigurerer HP ZGX nano-enheter over SSH.
+	Long: `zgx discovers, connects to, and configures HP ZGX nano devices over SSH.
 
-Portabel CLI portet fra HPInc/ZGX-Toolkit (X11/MIT).`,
+Portable CLI ported from HPInc/ZGX-Toolkit (X11/MIT).`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
 
-// Execute kjører root-kommandoen og returnerer feilen til main, som eier
-// exit-koden. Holder kommando-kjøring testbar (ingen os.Exit her).
+// Execute runs the root command and returns the error to main, which owns the
+// exit code. This keeps command execution testable (no os.Exit here).
 func Execute() error {
 	return rootCmd.Execute()
 }
 
-// stubCmd bygger en ikke-implementert subkommando. Returnerer en feil slik at
-// exit-koden er ærlig (ikke-implementert ≠ suksess) frem til den får logikk.
+// stubCmd builds an unimplemented subcommand. It returns an error so the exit
+// code is honest (unimplemented is not success) until logic is added.
 func stubCmd(use, short string) *cobra.Command {
 	return &cobra.Command{
 		Use:   use,
 		Short: short,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return fmt.Errorf("%s: ikke implementert ennå", cmd.Name())
+			return fmt.Errorf("%s: not implemented yet", cmd.Name())
 		},
 	}
 }

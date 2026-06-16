@@ -22,7 +22,7 @@ func pairCmd() *cobra.Command {
 	opts := defaultSystemCommandOptions()
 	cmd := &cobra.Command{
 		Use:   "pair <host>",
-		Short: "Par to enheter over ConnectX",
+		Short: "Pair two devices over ConnectX",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := cmd.OutOrStdout()
@@ -41,9 +41,9 @@ func pairCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintln(out, "Konfigurerte ConnectX-NIC-er:")
+			fmt.Fprintln(out, "Configured ConnectX NICs:")
 			writeNICs(out, nics)
-			fmt.Fprintln(out, "Netplan skrevet og anvendt.")
+			fmt.Fprintln(out, "Netplan written and applied.")
 			return nil
 		},
 	}
@@ -55,7 +55,7 @@ func unpairCmd() *cobra.Command {
 	opts := defaultSystemCommandOptions()
 	cmd := &cobra.Command{
 		Use:   "unpair <host>",
-		Short: "Opphev ConnectX-paring",
+		Short: "Remove ConnectX pairing",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := cmd.OutOrStdout()
@@ -73,7 +73,7 @@ func unpairCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintln(out, "ConnectX-konfigurasjon fjernet.")
+			fmt.Fprintln(out, "ConnectX configuration removed.")
 			return nil
 		},
 	}
@@ -85,7 +85,7 @@ func pairDetailsCmd() *cobra.Command {
 	opts := defaultSystemCommandOptions()
 	cmd := &cobra.Command{
 		Use:   "pair-details <host>",
-		Short: "Vis paringsdetaljer og ConnectX-NIC-er",
+		Short: "Show pairing details and ConnectX NICs",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			runner, err := buildPairRunner(args[0], opts)
@@ -100,7 +100,7 @@ func pairDetailsCmd() *cobra.Command {
 
 			out := cmd.OutOrStdout()
 			if len(nics) == 0 {
-				fmt.Fprintln(out, "Ingen ConnectX-NIC-er funnet.")
+				fmt.Fprintln(out, "No ConnectX NICs found.")
 				return nil
 			}
 			writeNICs(out, nics)
@@ -127,7 +127,7 @@ func writeNICs(out interface{ Write([]byte) (int, error) }, nics []pairing.NIC) 
 	for _, nic := range nics {
 		ip := nic.IPv4Address
 		if ip == "" {
-			ip = "(ingen IP)"
+			ip = "(no IP)"
 		}
 		fmt.Fprintf(out, "%s  %s\n", nic.LinuxDeviceName, ip)
 	}

@@ -17,15 +17,15 @@ func TestConfigCommandsUseXDGConfigHome(t *testing.T) {
 	add.SetOut(&addOut)
 	add.SetArgs([]string{"nano", "nano.local", "--user", "root", "--port", "2222", "--identity", "/tmp/id"})
 	if err := add.Execute(); err != nil {
-		t.Fatalf("config add feilet: %v", err)
+		t.Fatalf("config add failed: %v", err)
 	}
-	if got := addOut.String(); got != "Lagret nano.\n" {
+	if got := addOut.String(); got != "Saved nano.\n" {
 		t.Fatalf("config add output = %q", got)
 	}
 
 	path, err := configpkg.DefaultPath()
 	if err != nil {
-		t.Fatalf("DefaultPath feilet: %v", err)
+		t.Fatalf("DefaultPath failed: %v", err)
 	}
 	if !strings.HasSuffix(path, filepath.Join("zgx", "config.json")) {
 		t.Fatalf("DefaultPath = %q", path)
@@ -36,7 +36,7 @@ func TestConfigCommandsUseXDGConfigHome(t *testing.T) {
 	list.SetOut(&listOut)
 	list.SetArgs([]string{})
 	if err := list.Execute(); err != nil {
-		t.Fatalf("config list feilet: %v", err)
+		t.Fatalf("config list failed: %v", err)
 	}
 	if got := listOut.String(); got != "nano  root@nano.local:2222\n" {
 		t.Fatalf("config list output = %q", got)
@@ -47,9 +47,9 @@ func TestConfigCommandsUseXDGConfigHome(t *testing.T) {
 	remove.SetOut(&removeOut)
 	remove.SetArgs([]string{"nano"})
 	if err := remove.Execute(); err != nil {
-		t.Fatalf("config remove feilet: %v", err)
+		t.Fatalf("config remove failed: %v", err)
 	}
-	if got := removeOut.String(); got != "Fjernet nano.\n" {
+	if got := removeOut.String(); got != "Removed nano.\n" {
 		t.Fatalf("config remove output = %q", got)
 	}
 }

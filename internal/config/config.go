@@ -20,39 +20,39 @@ type Config struct {
 	Devices []Device `json:"devices"`
 }
 
-// DefaultPath returnerer config-stien: $XDG_CONFIG_HOME/zgx/config.json,
-// ellers ~/.config/zgx/config.json.
+// DefaultPath returns the config path: $XDG_CONFIG_HOME/zgx/config.json,
+// otherwise ~/.config/zgx/config.json.
 func DefaultPath() (string, error) {
 	base := os.Getenv("XDG_CONFIG_HOME")
 	if base == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			return "", fmt.Errorf("finn hjemmemappe: %w", err)
+			return "", fmt.Errorf("find home directory: %w", err)
 		}
 		base = filepath.Join(homeDir, ".config")
 	}
 	return filepath.Join(base, "zgx", "config.json"), nil
 }
 
-// Load leser config fra path. Fraværende fil returnerer tom Config.
+// Load reads config from path. A missing file returns an empty Config.
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return &Config{}, nil
 		}
-		return nil, fmt.Errorf("les config: %w", err)
+		return nil, fmt.Errorf("read config: %w", err)
 	}
 
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("les config-json: %w", err)
+		return nil, fmt.Errorf("read config JSON: %w", err)
 	}
 	cfg.sortDevices()
 	return &cfg, nil
 }
 
-// Save skriver config til path med privat mappe og fil.
+// Save writes config to path with a private directory and file.
 func Save(path string, cfg *Config) error {
 	if cfg == nil {
 		cfg = &Config{}
@@ -60,28 +60,28 @@ func Save(path string, cfg *Config) error {
 	cfg.sortDevices()
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return fmt.Errorf("opprett config-mappe: %w", err)
+		return fmt.Errorf("create config directory: %w", err)
 	}
 	if err := os.Chmod(filepath.Dir(path), 0o700); err != nil {
-		return fmt.Errorf("sett config-mappe-permissions: %w", err)
+		return fmt.Errorf("set config directory permissions: %w", err)
 	}
 
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
-		return fmt.Errorf("serialiser config: %w", err)
+		return fmt.Errorf("serialize config: %w", err)
 	}
 	data = append(data, '\n')
 
 	if err := os.WriteFile(path, data, 0o600); err != nil {
-		return fmt.Errorf("skriv config: %w", err)
+		return fmt.Errorf("write config: %w", err)
 	}
 	if err := os.Chmod(path, 0o600); err != nil {
-		return fmt.Errorf("sett config-fil-permissions: %w", err)
+		return fmt.Errorf("set config file permissions: %w", err)
 	}
 	return nil
 }
 
-// Get finner en enhet på alias.
+// Get finds a device by alias.
 func (c *Config) Get(alias string) (Device, bool) {
 	for _, device := range c.Devices {
 		if device.Alias == alias {
@@ -91,7 +91,7 @@ func (c *Config) Get(alias string) (Device, bool) {
 	return Device{}, false
 }
 
-// Upsert legger til eller oppdaterer en enhet på alias.
+// Upsert adds or updates a device by alias.
 func (c *Config) Upsert(d Device) {
 	for i := range c.Devices {
 		if c.Devices[i].Alias == d.Alias {
@@ -104,7 +104,7 @@ func (c *Config) Upsert(d Device) {
 	c.sortDevices()
 }
 
-// Remove fjerner en enhet på alias; returnerer om noe ble fjernet.
+// Remove removes a device by alias and reports whether anything was removed.
 func (c *Config) Remove(alias string) bool {
 	for i := range c.Devices {
 		if c.Devices[i].Alias == alias {

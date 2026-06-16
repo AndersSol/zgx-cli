@@ -14,7 +14,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// SSHRunner kjører install-motorens kommandoer over SSH med privatnøkkel-auth.
+// SSHRunner runs the install engine's commands over SSH with private-key auth.
 type SSHRunner struct {
 	Target         connect.Target
 	HostKey        ssh.HostKeyCallback
@@ -23,7 +23,7 @@ type SSHRunner struct {
 
 func (r SSHRunner) Run(ctx context.Context, command, sudoPassword string, timeout time.Duration, retries int) (CommandResult, error) {
 	if r.HostKey == nil {
-		return CommandResult{}, fmt.Errorf("ssh runner: HostKey callback mangler")
+		return CommandResult{}, fmt.Errorf("ssh runner: HostKey callback missing")
 	}
 	if retries < 0 {
 		retries = 0

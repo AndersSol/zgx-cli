@@ -28,7 +28,7 @@ func connectCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "connect <host>",
-		Short: "Sett opp SSH-nøkkeltilgang til en enhet",
+		Short: "Set up SSH key access to a device",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			host := args[0]
@@ -38,7 +38,7 @@ func connectCmd() *cobra.Command {
 
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
-				return fmt.Errorf("finn hjemmemappe: %w", err)
+				return fmt.Errorf("find home directory: %w", err)
 			}
 			sshDir := filepath.Join(homeDir, ".ssh")
 			if knownHosts == "" {
@@ -47,59 +47,59 @@ func connectCmd() *cobra.Command {
 
 			out := cmd.OutOrStdout()
 			if password == "" {
-				fmt.Fprintf(out, "Passord for %s@%s: ", user, host)
+				fmt.Fprintf(out, "Password for %s@%s: ", user, host)
 				passwordBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
 				fmt.Fprintln(out)
 				if err != nil {
-					return fmt.Errorf("les passord: %w", err)
+					return fmt.Errorf("read password: %w", err)
 				}
 				password = string(passwordBytes)
 			}
 
-			fmt.Fprintln(out, "Genererer eller gjenbruker SSH-nøkkel ...")
+			fmt.Fprintln(out, "Generating or reusing SSH key ...")
 			keyPair, err := connectpkg.GenerateKeyPair(sshDir, "id_ed25519", fmt.Sprintf("%s@%s", user, host))
 			if err != nil {
 				return err
 			}
 
 			hostKey, err := connectpkg.KnownHostsCallbackWithConfirm(knownHosts, func(hostname, fingerprint string) (bool, error) {
-				fmt.Fprintf(out, "Ukjent host %s. ED25519-fingerprint: %s. Stoler du på denne? Skriv ja: ", hostname, fingerprint)
+				fmt.Fprintf(out, "Unknown host %s. ED25519 fingerprint: %s. Do you trust it? Type yes: ", hostname, fingerprint)
 				answer, err := bufio.NewReader(os.Stdin).ReadString('\n')
 				if err != nil {
 					return false, err
 				}
-				return strings.TrimSpace(answer) == "ja", nil
+				return strings.EqualFold(strings.TrimSpace(answer), "yes"), nil
 			})
 			if err != nil {
 				return err
 			}
 
 			target := connectpkg.Target{Host: host, User: user, Port: port}
-			fmt.Fprintf(out, "Legger til offentlig nøkkel på %s@%s ...\n", user, host)
+			fmt.Fprintf(out, "Adding public key to %s@%s ...\n", user, host)
 			if err := connectpkg.Bootstrap(context.Background(), target, password, keyPair.PublicKeyLine, hostKey); err != nil {
 				return err
 			}
 
 			configPath := filepath.Join(sshDir, "config")
-			fmt.Fprintf(out, "Skriver SSH-konfigurasjon for alias %q ...\n", alias)
+			fmt.Fprintf(out, "Writing SSH config for alias %q ...\n", alias)
 			if err := connectpkg.WriteHostConfig(configPath, alias, host, user, port, keyPair.PrivateKeyPath); err != nil {
 				return err
 			}
 
-			fmt.Fprintln(out, "Tester nøkkel-tilgang ...")
+			fmt.Fprintln(out, "Testing key-based access ...")
 			if err := connectpkg.TestKeyAuth(context.Background(), target, keyPair.PrivateKeyPath, hostKey); err != nil {
 				return err
 			}
-			fmt.Fprintln(out, "Nøkkel-tilgang virker.")
+			fmt.Fprintln(out, "Key-based access works.")
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&user, "user", "hp", "SSH-bruker på enheten")
-	cmd.Flags().IntVar(&port, "port", 22, "SSH-port på enheten")
-	cmd.Flags().StringVar(&alias, "alias", "", "Host-alias i ~/.ssh/config (default: host)")
-	cmd.Flags().StringVar(&knownHosts, "known-hosts", "", "known_hosts-fil (default: ~/.ssh/known_hosts)")
-	cmd.Flags().StringVar(&password, "password", "", "SSH-passord (promptes skjult hvis tomt)")
+	cmd.Flags().StringVar(&user, "user", "hp", "SSH user on the device")
+	cmd.Flags().IntVar(&port, "port", 22, "SSH port on the device")
+	cmd.Flags().StringVar(&alias, "alias", "", "Host alias in ~/.ssh/config (default: host)")
+	cmd.Flags().StringVar(&knownHosts, "known-hosts", "", "known_hosts file (default: ~/.ssh/known_hosts)")
+	cmd.Flags().StringVar(&password, "password", "", "SSH password (prompted hidden if empty)")
 
 	return cmd
 }

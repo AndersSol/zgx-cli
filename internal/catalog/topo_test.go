@@ -15,7 +15,7 @@ func TestInstallOrderRespectsDeps(t *testing.T) {
 
 	order, err := InstallOrder(apps)
 	if err != nil {
-		t.Fatalf("InstallOrder() returnerte feil: %v", err)
+		t.Fatalf("InstallOrder() returned error: %v", err)
 	}
 
 	assertDepsBeforeApps(t, order)
@@ -31,15 +31,15 @@ func TestInstallOrderDeterministic(t *testing.T) {
 
 	first, err := InstallOrder(apps)
 	if err != nil {
-		t.Fatalf("første InstallOrder() returnerte feil: %v", err)
+		t.Fatalf("first InstallOrder() returned error: %v", err)
 	}
 	second, err := InstallOrder(apps)
 	if err != nil {
-		t.Fatalf("andre InstallOrder() returnerte feil: %v", err)
+		t.Fatalf("second InstallOrder() returned error: %v", err)
 	}
 
 	if got, want := appIDs(first), appIDs(second); strings.Join(got, ",") != strings.Join(want, ",") {
-		t.Fatalf("InstallOrder() er ikke deterministisk: %v != %v", got, want)
+		t.Fatalf("InstallOrder() is not deterministic: %v != %v", got, want)
 	}
 }
 
@@ -51,10 +51,10 @@ func TestInstallOrderCycleIsLoudError(t *testing.T) {
 
 	_, err := InstallOrder(apps)
 	if err == nil {
-		t.Fatal("InstallOrder() returnerte nil feil for sykel")
+		t.Fatal("InstallOrder() returned nil error for cycle")
 	}
-	if !strings.Contains(err.Error(), "sykel") {
-		t.Fatalf("InstallOrder() feil = %q, vil ha melding som nevner sykel", err.Error())
+	if !strings.Contains(err.Error(), "cycle") {
+		t.Fatalf("InstallOrder() error = %q, want message mentioning cycle", err.Error())
 	}
 }
 
@@ -65,22 +65,22 @@ func TestInstallOrderDepOutsideSetSkipped(t *testing.T) {
 
 	order, err := InstallOrder(apps)
 	if err != nil {
-		t.Fatalf("InstallOrder() returnerte feil: %v", err)
+		t.Fatalf("InstallOrder() returned error: %v", err)
 	}
 	if got, want := appIDs(order), []string{"x"}; strings.Join(got, ",") != strings.Join(want, ",") {
-		t.Fatalf("InstallOrder() = %v, vil ha %v", got, want)
+		t.Fatalf("InstallOrder() = %v, want %v", got, want)
 	}
 }
 
 func TestInstallOrderRealCatalog(t *testing.T) {
 	cats, err := Load()
 	if err != nil {
-		t.Fatalf("Load() returnerte feil: %v", err)
+		t.Fatalf("Load() returned error: %v", err)
 	}
 
 	order, err := InstallOrder(AllApps(cats))
 	if err != nil {
-		t.Fatalf("InstallOrder(AllApps(...)) returnerte feil: %v", err)
+		t.Fatalf("InstallOrder(AllApps(...)) returned error: %v", err)
 	}
 
 	pos := positionsByID(order)
@@ -96,7 +96,7 @@ func assertDepsBeforeApps(t *testing.T, apps []App) {
 	for _, app := range apps {
 		appPos, ok := pos[app.ID]
 		if !ok {
-			t.Fatalf("mangler posisjon for %q", app.ID)
+			t.Fatalf("missing position for %q", app.ID)
 		}
 		for _, depID := range app.Dependencies {
 			depPos, ok := pos[depID]
@@ -104,7 +104,7 @@ func assertDepsBeforeApps(t *testing.T, apps []App) {
 				continue
 			}
 			if depPos >= appPos {
-				t.Fatalf("%s er på posisjon %d, må komme før %s på posisjon %d", depID, depPos, app.ID, appPos)
+				t.Fatalf("%s is at position %d, must come before %s at position %d", depID, depPos, app.ID, appPos)
 			}
 		}
 	}
@@ -115,14 +115,14 @@ func assertBefore(t *testing.T, pos map[string]int, before string, after string)
 
 	beforePos, ok := pos[before]
 	if !ok {
-		t.Fatalf("mangler posisjon for %q", before)
+		t.Fatalf("missing position for %q", before)
 	}
 	afterPos, ok := pos[after]
 	if !ok {
-		t.Fatalf("mangler posisjon for %q", after)
+		t.Fatalf("missing position for %q", after)
 	}
 	if beforePos >= afterPos {
-		t.Fatalf("%s er på posisjon %d, må komme før %s på posisjon %d", before, beforePos, after, afterPos)
+		t.Fatalf("%s is at position %d, must come before %s at position %d", before, beforePos, after, afterPos)
 	}
 }
 

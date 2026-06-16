@@ -20,12 +20,12 @@ func TestServiceFileXML(t *testing.T) {
   </service>
 </service-group>`
 	if got != want {
-		t.Fatalf("ServiceFileXML() = %q, vil ha %q", got, want)
+		t.Fatalf("ServiceFileXML() = %q, want %q", got, want)
 	}
 
 	got = ServiceFileXML(`a<b&c>"'`)
 	if !strings.Contains(got, "<name>a&lt;b&amp;c&gt;&quot;&apos;</name>") {
-		t.Fatalf("ServiceFileXML() escaper ikke XML-tegn: %q", got)
+		t.Fatalf("ServiceFileXML() does not escape XML characters: %q", got)
 	}
 }
 
@@ -34,20 +34,20 @@ func TestCreateServiceFileCommand(t *testing.T) {
 	got := CreateServiceFileCommand(xml)
 
 	if !strings.HasPrefix(got, "sudo -S bash -c ") {
-		t.Fatalf("CreateServiceFileCommand() = %q, vil ha sudo-prefix", got)
+		t.Fatalf("CreateServiceFileCommand() = %q, want sudo prefix", got)
 	}
 	if !strings.Contains(got, "tee /etc/avahi/services/hpzgx.service") {
-		t.Fatalf("CreateServiceFileCommand() mangler service-fil-sti: %q", got)
+		t.Fatalf("CreateServiceFileCommand() missing service file path: %q", got)
 	}
 	if !strings.Contains(got, "'\\''") {
-		t.Fatalf("CreateServiceFileCommand() single-quote-escaper ikke apostrof: %q", got)
+		t.Fatalf("CreateServiceFileCommand() does not single-quote-escape apostrophe: %q", got)
 	}
 }
 
 func TestDeviceIdentifierCommand(t *testing.T) {
 	want := "ip route show default | awk '/default/ { print $5 }' | head -1 | xargs -I {} cat /sys/class/net/{}/address | tr -d ':' | sha256sum | cut -c1-8"
 	if got := DeviceIdentifierCommand(); got != want {
-		t.Fatalf("DeviceIdentifierCommand() = %q, vil ha %q", got, want)
+		t.Fatalf("DeviceIdentifierCommand() = %q, want %q", got, want)
 	}
 }
 
@@ -61,7 +61,7 @@ func TestRegisterFlow(t *testing.T) {
 
 	result, err := Register(context.Background(), runner, "pw")
 	if err != nil {
-		t.Fatalf("Register() returnerte feil: %v", err)
+		t.Fatalf("Register() returned error: %v", err)
 	}
 	if result.Identifier != "abcd1234" || !result.ServiceFileWritten || !result.AvahiRestarted {
 		t.Fatalf("Register() result = %#v", result)
@@ -69,10 +69,10 @@ func TestRegisterFlow(t *testing.T) {
 
 	createCommand := runner.commandContaining("tee /etc/avahi/services/hpzgx.service")
 	if createCommand == "" {
-		t.Fatalf("Register() kjørte ikke create-kommando; commands=%v", runner.commands)
+		t.Fatalf("Register() did not run create command; commands=%v", runner.commands)
 	}
 	if !strings.Contains(createCommand, "<name>abcd1234</name>") {
-		t.Fatalf("create-kommando mangler XML med identifier: %q", createCommand)
+		t.Fatalf("create command missing XML with identifier: %q", createCommand)
 	}
 }
 
@@ -86,13 +86,13 @@ func TestRegisterRestartFailureNonFatal(t *testing.T) {
 
 	result, err := Register(context.Background(), runner, "pw")
 	if err != nil {
-		t.Fatalf("Register() returnerte feil ved restart-feil, vil ha non-fatal: %v", err)
+		t.Fatalf("Register() returned error on restart failure, want non-fatal: %v", err)
 	}
 	if result.AvahiRestarted {
-		t.Fatalf("Register() AvahiRestarted = true ved restart-feil")
+		t.Fatalf("Register() AvahiRestarted = true on restart failure")
 	}
 	if result.Note == "" {
-		t.Fatalf("Register() Note er tom ved restart-feil: %#v", result)
+		t.Fatalf("Register() Note is empty on restart failure: %#v", result)
 	}
 }
 
@@ -105,10 +105,10 @@ func TestRegisterEmptyIdIsLoudError(t *testing.T) {
 
 	_, err := Register(context.Background(), runner, "pw")
 	if err == nil {
-		t.Fatal("Register() returnerte nil ved tom device-id")
+		t.Fatal("Register() returned nil on empty device id")
 	}
 	if len(runner.commands) != 1 {
-		t.Fatalf("Register() kjørte create/restart etter tom id: %v", runner.commands)
+		t.Fatalf("Register() ran create/restart after empty id: %v", runner.commands)
 	}
 }
 
@@ -123,13 +123,13 @@ func TestRegisterRejectsMalformedIdentifier(t *testing.T) {
 
 			_, err := Register(context.Background(), runner, "pw")
 			if err == nil {
-				t.Fatal("Register() returnerte nil ved malformed device-id")
+				t.Fatal("Register() returned nil on malformed device id")
 			}
 			if runner.commandContaining("tee /etc/avahi/services/hpzgx.service") != "" {
-				t.Fatalf("Register() kjørte service-filkommando etter malformed id: %v", runner.commands)
+				t.Fatalf("Register() ran service file command after malformed id: %v", runner.commands)
 			}
 			if runner.commandContaining("systemctl restart avahi-daemon") != "" {
-				t.Fatalf("Register() kjørte restart etter malformed id: %v", runner.commands)
+				t.Fatalf("Register() ran restart after malformed id: %v", runner.commands)
 			}
 		})
 	}
@@ -152,7 +152,7 @@ func (r *fakeRunner) Run(_ context.Context, command, _ string, _ time.Duration, 
 	if strings.Contains(command, "tee /etc/avahi/services/hpzgx.service") {
 		return install.CommandResult{ExitCode: 0}, nil
 	}
-	return install.CommandResult{}, errors.New("uventet kommando: " + command)
+	return install.CommandResult{}, errors.New("unexpected command: " + command)
 }
 
 func (r *fakeRunner) commandContaining(needle string) string {

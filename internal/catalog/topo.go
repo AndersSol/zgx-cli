@@ -13,11 +13,11 @@ const (
 	visited
 )
 
-// InstallOrder returnerer apps i installerings-rekkefølge: hver avhengighet før
-// appen som krever den. Port av appInstallationService.sortAppsByDependencies
-// DFS post-order over PRESIST det innsendte settet -- deps utenfor settet
-// løses ikke (kalleren bestemmer subsettet). Tillegg utover kilden: en
-// avhengighetssykel gir LOUD feil, ikke en stille vilkårlig rekkefølge.
+// InstallOrder returns apps in installation order: each dependency before the
+// app that requires it. Port of appInstallationService.sortAppsByDependencies
+//: DFS post-order over exactly the submitted set; deps outside the set
+// are not resolved (the caller decides the subset). Addition beyond the source:
+// a dependency cycle returns a loud error, not a silent arbitrary order.
 func InstallOrder(apps []App) ([]App, error) {
 	byID := make(map[string]App, len(apps))
 	for _, app := range apps {
@@ -37,7 +37,7 @@ func InstallOrder(apps []App) ([]App, error) {
 		case visited:
 			return nil
 		case visiting:
-			return fmt.Errorf("topo: avhengighetssykel oppdaget: %s", cyclePath(stack, stackPos, app.ID))
+			return fmt.Errorf("topo: dependency cycle detected: %s", cyclePath(stack, stackPos, app.ID))
 		}
 
 		states[app.ID] = visiting

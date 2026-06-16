@@ -25,7 +25,7 @@ func healthCmd() *cobra.Command {
 	opts := defaultSystemCommandOptions()
 	cmd := &cobra.Command{
 		Use:   "health <host>",
-		Short: "Sjekk SSH-tilkobling til en enhet",
+		Short: "Check SSH connectivity to a device",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			host := args[0]
@@ -40,8 +40,8 @@ func healthCmd() *cobra.Command {
 			target := connect.Target{Host: host, User: opts.user, Port: opts.port}
 			out := cmd.OutOrStdout()
 			if err := connect.TestKeyAuth(ctx, target, expandHome(opts.identity), hostKey); err != nil {
-				fmt.Fprintf(out, "%s: ikke tilgjengelig: %v\n", host, err)
-				return fmt.Errorf("health: %s ikke tilgjengelig: %w", host, err)
+				fmt.Fprintf(out, "%s: unreachable: %v\n", host, err)
+				return fmt.Errorf("health: %s unreachable: %w", host, err)
 			}
 			fmt.Fprintf(out, "%s: healthy\n", host)
 			return nil
@@ -55,17 +55,17 @@ func dnsRegisterCmd() *cobra.Command {
 	opts := defaultSystemCommandOptions()
 	cmd := &cobra.Command{
 		Use:   "dns-register <host>",
-		Short: "Registrer enheten for stabil mDNS-oppdagelse",
+		Short: "Register the device for stable mDNS discovery",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			host := args[0]
 			out := cmd.OutOrStdout()
 
-			fmt.Fprintf(out, "Sudo-passord for %s@%s: ", opts.user, host)
+			fmt.Fprintf(out, "Sudo password for %s@%s: ", opts.user, host)
 			passwordBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
 			fmt.Fprintln(out)
 			if err != nil {
-				return fmt.Errorf("les sudo-passord: %w", err)
+				return fmt.Errorf("read sudo password: %w", err)
 			}
 
 			hostKey, err := connect.KnownHostsCallback(expandHome(opts.knownHosts))
@@ -84,10 +84,10 @@ func dnsRegisterCmd() *cobra.Command {
 			}
 
 			fmt.Fprintf(out, "Device ID: %s\n", result.Identifier)
-			fmt.Fprintf(out, "Service-fil skrevet: %t\n", result.ServiceFileWritten)
-			fmt.Fprintf(out, "Avahi restartet: %t\n", result.AvahiRestarted)
+			fmt.Fprintf(out, "Service file written: %t\n", result.ServiceFileWritten)
+			fmt.Fprintf(out, "Avahi restarted: %t\n", result.AvahiRestarted)
 			if result.Note != "" {
-				fmt.Fprintf(out, "Merk: %s\n", result.Note)
+				fmt.Fprintf(out, "Note: %s\n", result.Note)
 			}
 			return nil
 		},
@@ -115,8 +115,8 @@ func defaultSystemCommandOptions() systemCommandOptions {
 }
 
 func addSystemSSHFlags(cmd *cobra.Command, opts *systemCommandOptions) {
-	cmd.Flags().StringVar(&opts.user, "user", opts.user, "SSH-bruker på enheten")
-	cmd.Flags().IntVar(&opts.port, "port", opts.port, "SSH-port på enheten")
-	cmd.Flags().StringVar(&opts.identity, "identity", opts.identity, "privat SSH-nøkkel")
-	cmd.Flags().StringVar(&opts.knownHosts, "known-hosts", opts.knownHosts, "known_hosts-fil")
+	cmd.Flags().StringVar(&opts.user, "user", opts.user, "SSH user on the device")
+	cmd.Flags().IntVar(&opts.port, "port", opts.port, "SSH port on the device")
+	cmd.Flags().StringVar(&opts.identity, "identity", opts.identity, "private SSH key")
+	cmd.Flags().StringVar(&opts.knownHosts, "known-hosts", opts.knownHosts, "known_hosts file")
 }

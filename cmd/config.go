@@ -14,7 +14,7 @@ func init() {
 func configCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Administrer lagrede enheter",
+		Short: "Manage saved devices",
 	}
 	cmd.AddCommand(
 		configAddCmd(),
@@ -28,7 +28,7 @@ func configAddCmd() *cobra.Command {
 	var device configpkg.Device
 	cmd := &cobra.Command{
 		Use:   "add <alias> <host>",
-		Short: "Lagre eller oppdater en enhet",
+		Short: "Save or update a device",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			device.Alias = args[0]
@@ -42,20 +42,20 @@ func configAddCmd() *cobra.Command {
 			if err := configpkg.Save(path, cfg); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Lagret %s.\n", device.Alias)
+			fmt.Fprintf(cmd.OutOrStdout(), "Saved %s.\n", device.Alias)
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&device.User, "user", "hp", "SSH-bruker på enheten")
-	cmd.Flags().IntVar(&device.Port, "port", 22, "SSH-port på enheten")
-	cmd.Flags().StringVar(&device.Identity, "identity", "", "privat SSH-nøkkel")
+	cmd.Flags().StringVar(&device.User, "user", "hp", "SSH user on the device")
+	cmd.Flags().IntVar(&device.Port, "port", 22, "SSH port on the device")
+	cmd.Flags().StringVar(&device.Identity, "identity", "", "private SSH key")
 	return cmd
 }
 
 func configListCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
-		Short: "Vis lagrede enheter",
+		Short: "Show saved devices",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, _, err := loadDefaultConfig()
@@ -65,7 +65,7 @@ func configListCmd() *cobra.Command {
 
 			out := cmd.OutOrStdout()
 			if len(cfg.Devices) == 0 {
-				fmt.Fprintln(out, "Ingen enheter lagret.")
+				fmt.Fprintln(out, "No devices saved.")
 				return nil
 			}
 			for _, device := range cfg.Devices {
@@ -79,7 +79,7 @@ func configListCmd() *cobra.Command {
 func configRemoveCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "remove <alias>",
-		Short: "Fjern en lagret enhet",
+		Short: "Remove a saved device",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			alias := args[0]
@@ -88,13 +88,13 @@ func configRemoveCmd() *cobra.Command {
 				return err
 			}
 			if !cfg.Remove(alias) {
-				fmt.Fprintf(cmd.OutOrStdout(), "Fant ikke %s.\n", alias)
-				return fmt.Errorf("fant ikke %s", alias)
+				fmt.Fprintf(cmd.OutOrStdout(), "Not found %s.\n", alias)
+				return fmt.Errorf("not found %s", alias)
 			}
 			if err := configpkg.Save(path, cfg); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Fjernet %s.\n", alias)
+			fmt.Fprintf(cmd.OutOrStdout(), "Removed %s.\n", alias)
 			return nil
 		},
 	}

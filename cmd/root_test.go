@@ -6,14 +6,14 @@ import (
 	"testing"
 )
 
-// cobra registrerer disse selv; de er ikke del av zgx sin kommando-flate.
+// cobra registers these itself; they are not part of zgx's command surface.
 var cobraBuiltins = map[string]bool{"help": true, "completion": true}
 
-// TestRootSubcommandSetExact verifiserer at den registrerte kommando-flaten er
-// EKSAKT den intenderte: hver forventet kommando finnes, og ingen uventede er
-// registrert (utenom cobras innebygde). Settet utledes fra rootCmd.Commands()
-// — ikke en selv-rapportert literal — så testen fanger både manglende og
-// utilsiktet tilkomne kommandoer (drift i begge retninger).
+// TestRootSubcommandSetExact verifies that the registered command surface is
+// exactly the intended one: every expected command exists, and no unexpected
+// commands are registered (except cobra's built-ins). The set is derived from
+// rootCmd.Commands(), not a self-reported literal, so the test catches both
+// missing and accidentally added commands (drift in both directions).
 func TestRootSubcommandSetExact(t *testing.T) {
 	want := map[string]bool{
 		"config":   true,
@@ -31,19 +31,19 @@ func TestRootSubcommandSetExact(t *testing.T) {
 		}
 		have[name] = true
 		if !want[name] {
-			t.Errorf("uventet subkommando registrert: %q", name)
+			t.Errorf("unexpected subcommand registered: %q", name)
 		}
 	}
 
 	for name := range want {
 		if !have[name] {
-			t.Errorf("root mangler subkommando %q", name)
+			t.Errorf("root missing subcommand %q", name)
 		}
 	}
 }
 
-// TestStubsReturnError forsvarer fortsatt ærlig-exit-invarianten fra stub-fasen:
-// nå via en ekte kommando-feilsti som SKAL returnere en feil (→ exit≠0).
+// TestStubsReturnError still defends the honest-exit invariant from the stub
+// phase: now via a real command error path that MUST return an error (exit != 0).
 func TestStubsReturnError(t *testing.T) {
 	rootCmd.SetArgs([]string{"pair-details"})
 	rootCmd.SetOut(io.Discard)
@@ -51,9 +51,9 @@ func TestStubsReturnError(t *testing.T) {
 
 	err := rootCmd.Execute()
 	if err == nil {
-		t.Fatal("kommando-feilsti returnerte nil — skal returnere feil for exit≠0")
+		t.Fatal("command error path returned nil; should return an error for exit != 0")
 	}
 	if !strings.Contains(err.Error(), "accepts 1 arg") {
-		t.Errorf("uventet feilmelding fra manglende arg: %v", err)
+		t.Errorf("unexpected error message from missing arg: %v", err)
 	}
 }

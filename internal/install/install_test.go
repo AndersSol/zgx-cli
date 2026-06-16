@@ -47,10 +47,10 @@ func TestSudoCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			command, usesSudo := SudoCommand(tt.raw)
 			if command != tt.command {
-				t.Fatalf("SudoCommand(%q) command = %q, vil ha %q", tt.raw, command, tt.command)
+				t.Fatalf("SudoCommand(%q) command = %q, want %q", tt.raw, command, tt.command)
 			}
 			if usesSudo != tt.usesSudo {
-				t.Fatalf("SudoCommand(%q) usesSudo = %v, vil ha %v", tt.raw, usesSudo, tt.usesSudo)
+				t.Fatalf("SudoCommand(%q) usesSudo = %v, want %v", tt.raw, usesSudo, tt.usesSudo)
 			}
 		})
 	}
@@ -66,17 +66,17 @@ func TestInstallOrdersDepsAndBaseFirst(t *testing.T) {
 
 	report, err := (&Engine{Runner: runner}).Install(context.Background(), cats, []string{"jupyter-lab"}, "pw")
 	if err != nil {
-		t.Fatalf("Install returnerte feil: %v", err)
+		t.Fatalf("Install returned error: %v", err)
 	}
 
 	installs := runner.installIDs()
 	wantOrder := []string{"base-system", "curl", "miniforge", "zgx-python-env", "jupyter-lab"}
 	if !slices.Equal(installs, wantOrder) {
-		t.Fatalf("install order = %v, vil ha %v", installs, wantOrder)
+		t.Fatalf("install order = %v, want %v", installs, wantOrder)
 	}
 	for _, id := range wantOrder {
 		if !slices.Contains(report.Installed, id) {
-			t.Fatalf("Report.Installed mangler %q: %#v", id, report)
+			t.Fatalf("Report.Installed missing %q: %#v", id, report)
 		}
 	}
 }
@@ -86,18 +86,18 @@ func TestInstallPlanExpandsAndOrders(t *testing.T) {
 
 	plan, err := InstallPlan(cats, []string{"jupyter-lab"})
 	if err != nil {
-		t.Fatalf("InstallPlan returnerte feil: %v", err)
+		t.Fatalf("InstallPlan returned error: %v", err)
 	}
 
 	got := appIDs(plan)
 	want := []string{"base-system", "curl", "miniforge", "zgx-python-env", "jupyter-lab"}
 	for _, id := range want {
 		if !slices.Contains(got, id) {
-			t.Fatalf("InstallPlan mangler %q: %v", id, got)
+			t.Fatalf("InstallPlan missing %q: %v", id, got)
 		}
 	}
 	if got[0] != "base-system" {
-		t.Fatalf("InstallPlan første app = %q, vil ha base-system; plan=%v", got[0], got)
+		t.Fatalf("InstallPlan first app = %q, want base-system; plan=%v", got[0], got)
 	}
 
 	pos := positions(got)
@@ -115,14 +115,14 @@ func TestInstallSkipsAlreadyInstalled(t *testing.T) {
 
 	report, err := (&Engine{Runner: runner}).Install(context.Background(), cats, []string{"curl"}, "pw")
 	if err != nil {
-		t.Fatalf("Install returnerte feil: %v", err)
+		t.Fatalf("Install returned error: %v", err)
 	}
 
 	if !slices.Contains(report.AlreadyInstalled, "curl") {
-		t.Fatalf("curl ikke i AlreadyInstalled: %#v", report)
+		t.Fatalf("curl not in AlreadyInstalled: %#v", report)
 	}
 	if slices.Contains(runner.installIDs(), "curl") {
-		t.Fatalf("curl installCommand ble kjørt selv om verify var grønn: %v", runner.calls)
+		t.Fatalf("curl installCommand was run even though verify was green: %v", runner.calls)
 	}
 }
 
@@ -139,17 +139,17 @@ func TestInstallPartialFailureContinues(t *testing.T) {
 
 	report, err := (&Engine{Runner: runner}).Install(context.Background(), cats, []string{"miniforge", "ollama"}, "pw")
 	if err != nil {
-		t.Fatalf("Install returnerte feil: %v", err)
+		t.Fatalf("Install returned error: %v", err)
 	}
 
 	if !slices.Contains(report.Failed, "miniforge") {
-		t.Fatalf("miniforge ikke i Failed: %#v", report)
+		t.Fatalf("miniforge not in Failed: %#v", report)
 	}
 	if !slices.Contains(report.Installed, "ollama") {
-		t.Fatalf("ollama ble ikke installert etter miniforge-feil: %#v", report)
+		t.Fatalf("ollama was not installed after miniforge failure: %#v", report)
 	}
 	if runner.installIndex("ollama") <= runner.installIndex("miniforge") {
-		t.Fatalf("senere app ble ikke forsøkt etter feil, installIDs=%v", runner.installIDs())
+		t.Fatalf("later app was not attempted after failure, installIDs=%v", runner.installIDs())
 	}
 }
 
@@ -157,12 +157,12 @@ func TestUnknownAppIsLoudError(t *testing.T) {
 	cats := mustCatalog(t)
 	runner := newFakeRunner(cats, nil, nil)
 
-	_, err := (&Engine{Runner: runner}).Install(context.Background(), cats, []string{"finnes-ikke"}, "pw")
+	_, err := (&Engine{Runner: runner}).Install(context.Background(), cats, []string{"does-not-exist"}, "pw")
 	if err == nil {
-		t.Fatal("Install med ukjent app-id returnerte nil error")
+		t.Fatal("Install with unknown app id returned nil error")
 	}
 	if len(runner.calls) != 0 {
-		t.Fatalf("Run ble kalt før ukjent app feilet: %v", runner.calls)
+		t.Fatalf("Run was called before unknown app failed: %v", runner.calls)
 	}
 }
 
@@ -172,13 +172,13 @@ func TestUninstallSkipsNonUninstallable(t *testing.T) {
 
 	report, err := (&Engine{Runner: runner}).Uninstall(context.Background(), cats, []string{"base-system"}, "pw")
 	if err != nil {
-		t.Fatalf("Uninstall returnerte feil: %v", err)
+		t.Fatalf("Uninstall returned error: %v", err)
 	}
 	if !slices.Contains(report.Skipped, "base-system") {
-		t.Fatalf("base-system ikke i Skipped: %#v", report)
+		t.Fatalf("base-system not in Skipped: %#v", report)
 	}
 	if slices.Contains(report.Failed, "base-system") {
-		t.Fatalf("base-system havnet i Failed: %#v", report)
+		t.Fatalf("base-system ended up in Failed: %#v", report)
 	}
 }
 
@@ -188,17 +188,17 @@ func TestUninstallDoesNotExpandDependencies(t *testing.T) {
 
 	_, err := (&Engine{Runner: runner}).Uninstall(context.Background(), cats, []string{"jupyter-lab"}, "pw")
 	if err != nil {
-		t.Fatalf("Uninstall returnerte feil: %v", err)
+		t.Fatalf("Uninstall returned error: %v", err)
 	}
 
 	got := runner.uninstallIDs()
 	want := []string{"jupyter-lab"}
 	if !slices.Equal(got, want) {
-		t.Fatalf("uninstall IDs = %v, vil ha kun %v", got, want)
+		t.Fatalf("uninstall IDs = %v, want only %v", got, want)
 	}
 	for _, id := range []string{"miniforge", "curl", "zgx-python-env"} {
 		if slices.Contains(got, id) {
-			t.Fatalf("%s sin uninstallCommand ble kjørt ved uninstall av jupyter-lab: %v", id, got)
+			t.Fatalf("%s uninstallCommand was run while uninstalling jupyter-lab: %v", id, got)
 		}
 	}
 }
@@ -209,13 +209,13 @@ func TestUninstallReverseOrderAmongSelected(t *testing.T) {
 
 	_, err := (&Engine{Runner: runner}).Uninstall(context.Background(), cats, []string{"miniforge", "zgx-python-env"}, "pw")
 	if err != nil {
-		t.Fatalf("Uninstall returnerte feil: %v", err)
+		t.Fatalf("Uninstall returned error: %v", err)
 	}
 
 	got := runner.uninstallIDs()
 	want := []string{"zgx-python-env", "miniforge"}
 	if !slices.Equal(got, want) {
-		t.Fatalf("uninstall order = %v, vil ha %v", got, want)
+		t.Fatalf("uninstall order = %v, want %v", got, want)
 	}
 }
 
@@ -338,7 +338,7 @@ func mustCatalog(t *testing.T) []catalog.Category {
 	t.Helper()
 	cats, err := catalog.Load()
 	if err != nil {
-		t.Fatalf("catalog.Load() feilet: %v", err)
+		t.Fatalf("catalog.Load() failed: %v", err)
 	}
 	return cats
 }
@@ -362,6 +362,6 @@ func positions(ids []string) map[string]int {
 func assertBefore(t *testing.T, pos map[string]int, before, after string) {
 	t.Helper()
 	if pos[before] >= pos[after] {
-		t.Fatalf("%s kom ikke før %s: %v", before, after, pos)
+		t.Fatalf("%s did not come before %s: %v", before, after, pos)
 	}
 }
